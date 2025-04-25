@@ -3,15 +3,18 @@ from oauth2client.service_account import ServiceAccountCredentials
 import time
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from gf_utils import *
+from googleapiclient.errors import HttpError
+#from gf_utils import *
 from datetime import datetime
+import logging
 
+logging.basicConfig(filename='goflow.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Setup
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
 
-CREDS = ServiceAccountCredentials.from_json_keyfile_name("goflow-454119-ab42a2f3f42d.json", SCOPE)
+CREDS = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
 DEBUG = True
 
 Run = True
@@ -21,9 +24,15 @@ UpdateTime = 10
 client = gspread.authorize(CREDS)
 service = build('sheets', 'v4', credentials=CREDS)
 
-
-
-
+def safe_api_call(func, *args, retries=3, delay=5, **kwargs):
+    for attempt in range(retries):
+        try:
+            return func(*args, **kwargs)
+        except HttpError as e:
+            print(f"[{datetime.now()}] API call failed: {e}. Retrying {attempt + 1}/{retries}...")
+            time.sleep(delay)
+    print(f"[{datetime.now()}] API call failed after {retries} retries.")
+    return None
 
 if DEBUG:
     print(f"[{datetime.now()}] Opening spreadsheets...")
@@ -42,24 +51,112 @@ if DEBUG:
     print(f"[{datetime.now()}] Spreadsheets opened...")
 
 # FUNCTIONS
+def createTask(service, spreadsheet, sheet, row, taskData):
+    request_body = {
+        "requests": [
+            {
+                "insertDimension": {
+                    "range": {
+                        "sheetId": sheet.id,
+                        "dimension": "ROWS",
+                        "startIndex": row,
+                        "endIndex": row + 1
+                    },
+                    "inheritFromBefore": True
+                }
+            },
+            {
+                "updateCells": {
+                    "rows": {
+                        "values": [
+                            {
+                                "userEnteredValue": {
+                                    "stringValue": str(value)
+                                },
+                                "userEnteredFormat": {
+                                    "horizontalAlignment": "LEFT",
+                                    "verticalAlignment": "TOP",
+                                    "wrapStrategy": "WRAP"
+                                }
+                            } for value in taskData
+                        ]
+                    },
+                    "fields": "*",
+                    "start": {
+                        "sheetId": sheet.id,
+                        "rowIndex": row,
+                        "columnIndex": 0
+                    }
+                }
+            },
+            {
+                "updateDimensionProperties": {
+                    "range": {
+                        "sheetId": sheet.id,
+                        "dimension": "ROWS",
+                        "startIndex": row,  
+                        "endIndex": row + 1 
+                    },
+                    "properties": {
+                        "pixelSize": 21
+                    },
+                    "fields": "pixelSize"
+                }
+            }
+        ]
+    }
+    response = safe_api_call(service.spreadsheets().batchUpdate, spreadsheetId=spreadsheet.id, body=request_body)
+    
+
+
+def groupRows(service, spreadsheet, sheet, start, end):
+    request_body = {
+        "requests":[
+            {
+                "addDimensionGroup":{
+                    "range":{
+                    "sheetId": sheet.id,
+                    "dimension": "ROWS",
+                    "startIndex": start,
+                    "endIndex": end
+                    }
+                }
+            }
+        ]
+    }
+    response = service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet.id,
+        body=request_body
+    ).execute()
+
 def syncSupport():
-    data = sheet_Solidpixels.get_all_values()
-    data.pop(0)
+    try:
+        data = sheet_Solidpixels.get_all_values()
+        data.pop(0)
 
-    lastindex = int(system_GoFlow.get_all_values()[0][1])
-    defOwner = system_GoFlow.get_all_values()[5][1]
+        lastindex = int(system_GoFlow.get_all_values()[0][1])
+        defOwner = system_GoFlow.get_all_values()[5][1]
 
-    index = 0
-    for row in data:
-        if row[7] != "TRUE":
-            sheet_Solidpixels.update_cell(index + 2, 7, f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}")
-            sheet_Solidpixels.update_cell(index + 2, 8, True)
-            taskData = [f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}", row[0], row[2], "SUPPORT", defOwner, "Low", "Income", 0, "", "", row[4]]
-            createTask(service, spreadsheet_GoFlow, sheet_GoFlow, 1, taskData)
-            lastindex += 1
-            time.sleep(3)
-        index += 1
-    system_GoFlow.update_cell(1, 2, lastindex)
+        index = 0
+        for row in data:
+            if len(row) > 7 and row[7] != "TRUE":
+                try:
+                    sheet_Solidpixels.update_cell(index + 2, 7, f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}")
+                    sheet_Solidpixels.update_cell(index + 2, 8, True)
+                    taskData = [f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}", row[0], row[2], "SUPPORT", defOwner, "Low", "Income", 0, "", "", row[4]]
+                    createTask(service, spreadsheet_GoFlow, sheet_GoFlow, 1, taskData)
+                    lastindex += 1
+                    time.sleep(3)
+                except Exception as e:
+                    print(f"[{datetime.now()}] Error processing row {index}: {e}")
+                    logging.error(f"Error processing row {index}: {e}")
+            else:
+                print(f"[{datetime.now()}] Skipping invalid row: {row}")
+            index += 1
+        system_GoFlow.update_cell(1, 2, lastindex)
+    except Exception as e:
+        print(f"[{datetime.now()}] Error in syncSupport: {e}")
+        logging.error(f"Error in syncSupport: {e}")
 
 def console():
     command = system_GoFlow.get_all_values()[0][7]
@@ -80,20 +177,20 @@ def console():
 def sync():
     syncSupport()
 
-
-
-
-
-
-while Run == True:
-    if DEBUG:
-        print(f"[{datetime.now()}] Syncing...")
-    console()
-    sync()
-    time.sleep(UpdateTime)
-
-system_GoFlow.update_cell(1, 8, "")
-print(f"[{datetime.now()}] ### Stop ###")
+try:
+    while Run:
+        if DEBUG:
+            print(f"[{datetime.now()}] Syncing...")
+        console()
+        sync()
+        time.sleep(UpdateTime)
+except KeyboardInterrupt:
+    print(f"[{datetime.now()}] Interrupted by user. Shutting down...")
+except Exception as e:
+    logging.error(f"An error occurred: {e}")
+finally:
+    system_GoFlow.update_cell(1, 8, "")
+    print(f"[{datetime.now()}] ### Stop ###")
 
 
 
