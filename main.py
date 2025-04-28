@@ -131,6 +131,7 @@ def groupRows(service, spreadsheet, sheet, start, end):
 
 def syncSupport():
     try:
+        system_GoFlow.update_cell(5, 2, True)
         data = sheet_Solidpixels.get_all_values()
         data.pop(0)
 
@@ -143,7 +144,7 @@ def syncSupport():
                 try:
                     sheet_Solidpixels.update_cell(index + 2, 7, f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}")
                     sheet_Solidpixels.update_cell(index + 2, 8, True)
-                    taskData = [f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}", row[0], row[2], "SUPPORT", defOwner, "Low", "Income", 0, "", "", row[4]]
+                    taskData = [f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}", row[0], row[2], "SUPPORT", defOwner, "Low", "Income", datetime.now().replace(microsecond=0), 0, "", "", row[4]]
                     createTask(service, spreadsheet_GoFlow, sheet_GoFlow, 1, taskData)
                     lastindex += 1
                     time.sleep(3)
@@ -154,6 +155,7 @@ def syncSupport():
                 print(f"[{datetime.now()}] Skipping invalid row: {row}")
             index += 1
         system_GoFlow.update_cell(1, 2, lastindex)
+        system_GoFlow.update_cell(5, 2, False)
     except Exception as e:
         print(f"[{datetime.now()}] Error in syncSupport: {e}")
         logging.error(f"Error in syncSupport: {e}")
