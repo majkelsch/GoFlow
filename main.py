@@ -105,7 +105,12 @@ def createTask(service, spreadsheet, sheet, row, taskData):
             }
         ]
     }
-    response = safe_api_call(service.spreadsheets().batchUpdate, spreadsheetId=spreadsheet.id, body=request_body)
+    #response = safe_api_call(service.spreadsheets().batchUpdate, spreadsheetId=spreadsheet.id, body=request_body)
+    # safe_api_call is currently faulty, reverting to direct call
+    response = service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet.id,
+        body=request_body
+    ).execute()
     
 
 
