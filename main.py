@@ -4,7 +4,7 @@ import time
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.errors import HttpError
-#from gf_utils import *
+
 from datetime import datetime
 import logging
 
@@ -18,7 +18,7 @@ CREDS = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCO
 DEBUG = True
 
 Run = True
-UpdateTime = 10
+UpdateTime = 30
 
 
 client = gspread.authorize(CREDS)
@@ -39,12 +39,12 @@ if DEBUG:
 
 # Open spreadsheets
 # GoFlow
-spreadsheet_GoFlow = client.open_by_key("1TeE3sE2t72mJJ9vGxvJRM2dk2f2zgdiWu8Uhmd7vBBU")
+spreadsheet_GoFlow = client.open_by_key("1mQmG5CHq_O0jtckuKY8P6sYiJqXhsQLBmIzuz1qCr0M")
 sheet_GoFlow = spreadsheet_GoFlow.worksheet("GoFlow")
 system_GoFlow = spreadsheet_GoFlow.worksheet("System")
 command = system_GoFlow.get_all_values()[0][7]
 #Solidpixels
-spreadsheet_Solidpixels = client.open_by_key("1igKn8Qc6D2arQC9zyQuSMolx3eSmUxbM0Q_LlBDXKk4")
+spreadsheet_Solidpixels = client.open_by_key("1aLx-PVz_0AwGby2V3NKFI7646ek5s8-uV98CR6loX2k")
 sheet_Solidpixels = spreadsheet_Solidpixels.worksheet("Solidpixels")
 
 if DEBUG:
@@ -142,16 +142,20 @@ def syncSupport():
 
         lastindex = int(system_GoFlow.get_all_values()[0][1])
         defOwner = system_GoFlow.get_all_values()[5][1]
+        success = 0
+        total = 0
 
         index = 0
         for row in data:
             if len(row) > 7 and row[7] != "TRUE":
+                total += 1
                 try:
                     sheet_Solidpixels.update_cell(index + 2, 7, f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}")
                     sheet_Solidpixels.update_cell(index + 2, 8, True)
                     taskData = [f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}", row[0], row[2], "SUPPORT", defOwner, "Low", "Income", datetime.now().replace(microsecond=0), 0, "", "", row[4]]
                     createTask(service, spreadsheet_GoFlow, sheet_GoFlow, 1, taskData)
                     lastindex += 1
+                    success += 1
                     time.sleep(3)
                 except Exception as e:
                     print(f"[{datetime.now()}] Error processing row {index}: {e}")
@@ -161,6 +165,7 @@ def syncSupport():
             index += 1
         system_GoFlow.update_cell(1, 2, lastindex)
         system_GoFlow.update_cell(5, 2, False)
+        system_GoFlow.update_cell(2, 8, f"[{datetime.now()}] Synced Succesfully [{success}/{total}]")
     except Exception as e:
         print(f"[{datetime.now()}] Error in syncSupport: {e}")
         logging.error(f"Error in syncSupport: {e}")
