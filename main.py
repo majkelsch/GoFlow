@@ -4,48 +4,42 @@ import time
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.errors import HttpError
+import json
 
 from datetime import datetime
 import logging
 import sys
 
 logging.basicConfig(filename='goflow.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+with open("config.json") as f:
+    config = json.load(f)
 
 # Setup
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
 
 CREDS = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
-DEBUG = True
+DEBUG = config["DEBUG"]
+UpdateTime = config["UpdateTime"]
+GOFLOW_ID = config["GOFLOW_SPREADSHEET_ID"]
+SOLIDPIXELS_ID = config["SOLIDPIXELS_SPREADSHEET_ID"]
 
 Run = True
-UpdateTime = 30
 
 
 client = gspread.authorize(CREDS)
 service = build('sheets', 'v4', credentials=CREDS)
 
-def safe_api_call(func, *args, retries=3, delay=5, **kwargs):
-    for attempt in range(retries):
-        try:
-            return func(*args, **kwargs)
-        except HttpError as e:
-            print(f"[{datetime.now()}] API call failed: {e}. Retrying {attempt + 1}/{retries}...")
-            time.sleep(delay)
-    print(f"[{datetime.now()}] API call failed after {retries} retries.")
-    return None
-
 if DEBUG:
     print(f"[{datetime.now()}] Opening spreadsheets...")
-
 # Open spreadsheets
 # GoFlow
-spreadsheet_GoFlow = client.open_by_key("1mQmG5CHq_O0jtckuKY8P6sYiJqXhsQLBmIzuz1qCr0M")
+spreadsheet_GoFlow = client.open_by_key(GOFLOW_ID)
 sheet_GoFlow = spreadsheet_GoFlow.worksheet("GoFlow")
 system_GoFlow = spreadsheet_GoFlow.worksheet("System")
 command = system_GoFlow.get_all_values()[0][7]
 #Solidpixels
-spreadsheet_Solidpixels = client.open_by_key("1aLx-PVz_0AwGby2V3NKFI7646ek5s8-uV98CR6loX2k")
+spreadsheet_Solidpixels = client.open_by_key(SOLIDPIXELS_ID)
 sheet_Solidpixels = spreadsheet_Solidpixels.worksheet("Solidpixels")
 
 if DEBUG:
@@ -106,30 +100,6 @@ def createTask(service, spreadsheet, sheet, row, taskData):
             }
         ]
     }
-    #response = safe_api_call(service.spreadsheets().batchUpdate, spreadsheetId=spreadsheet.id, body=request_body)
-    # safe_api_call is currently faulty, reverting to direct call
-    response = service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet.id,
-        body=request_body
-    ).execute()
-    
-
-
-def groupRows(service, spreadsheet, sheet, start, end):
-    request_body = {
-        "requests":[
-            {
-                "addDimensionGroup":{
-                    "range":{
-                    "sheetId": sheet.id,
-                    "dimension": "ROWS",
-                    "startIndex": start,
-                    "endIndex": end
-                    }
-                }
-            }
-        ]
-    }
     response = service.spreadsheets().batchUpdate(
         spreadsheetId=spreadsheet.id,
         body=request_body
@@ -165,8 +135,8 @@ def syncSupport():
                 except Exception as e:
                     print(f"[{datetime.now()}] Error processing row {index}: {e}")
                     logging.error(f"Error processing row {index}: {e}")
-            else:
-                print(f"[{datetime.now()}] Skipping invalid row: {row}")
+            #else:
+            #    print(f"[{datetime.now()}] Skipping invalid row: {row}")
 
         # Batch update for Solidpixels sheet
         if updates:
