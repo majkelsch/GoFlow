@@ -7,6 +7,7 @@ from googleapiclient.errors import HttpError
 
 from datetime import datetime
 import logging
+import sys
 
 logging.basicConfig(filename='goflow.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -145,27 +146,41 @@ def syncSupport():
         success = 0
         total = 0
 
-        index = 0
-        for row in data:
+        updates = []
+        task_updates = []
+
+        for index, row in enumerate(data):
             if len(row) > 7 and row[7] != "TRUE":
                 total += 1
                 try:
-                    sheet_Solidpixels.update_cell(index + 2, 7, f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}")
-                    sheet_Solidpixels.update_cell(index + 2, 8, True)
-                    taskData = [f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}", row[0], row[2], "SUPPORT", defOwner, "Low", "Income", datetime.now().replace(microsecond=0), 0, "", "", row[4]]
-                    createTask(service, spreadsheet_GoFlow, sheet_GoFlow, 1, taskData)
+                    task_id = f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}"
+                    updates.append({
+                        "range": f"Solidpixels!G{index + 2}:H{index + 2}",
+                        "values": [[task_id, True]]
+                    })
+                    taskData = [task_id, row[0], row[2], "SUPPORT", defOwner, "Low", "Income", datetime.now().replace(microsecond=0), 0, "", "", row[4]]
+                    task_updates.append((1, taskData))
                     lastindex += 1
                     success += 1
-                    time.sleep(3)
                 except Exception as e:
                     print(f"[{datetime.now()}] Error processing row {index}: {e}")
                     logging.error(f"Error processing row {index}: {e}")
             else:
                 print(f"[{datetime.now()}] Skipping invalid row: {row}")
-            index += 1
+
+        # Batch update for Solidpixels sheet
+        if updates:
+            body = {"valueInputOption": "USER_ENTERED", "data": updates}
+            service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_Solidpixels.id, body=body).execute()
+
+        # Batch create tasks
+        for row, taskData in task_updates:
+            createTask(service, spreadsheet_GoFlow, sheet_GoFlow, row, taskData)
+
         system_GoFlow.update_cell(1, 2, lastindex)
         system_GoFlow.update_cell(5, 2, False)
-        system_GoFlow.update_cell(2, 8, f"[{datetime.now()}] Synced Succesfully [{success}/{total}]")
+        system_GoFlow.update_cell(2, 8, f"[{datetime.now()}] Synced Successfully [{success}/{total}]")
+        logging.info(f"Synced Successfully [{success}/{total}]")
     except Exception as e:
         print(f"[{datetime.now()}] Error in syncSupport: {e}")
         logging.error(f"Error in syncSupport: {e}")
@@ -189,20 +204,40 @@ def console():
 def sync():
     syncSupport()
 
-try:
-    while Run:
-        if DEBUG:
-            print(f"[{datetime.now()}] Syncing...")
-        console()
-        sync()
-        time.sleep(UpdateTime)
-except KeyboardInterrupt:
-    print(f"[{datetime.now()}] Interrupted by user. Shutting down...")
-except Exception as e:
-    logging.error(f"An error occurred: {e}")
-finally:
-    system_GoFlow.update_cell(1, 8, "")
-    print(f"[{datetime.now()}] ### Stop ###")
+
+def main_loop():
+    global Run
+    try:
+        while Run:
+            if DEBUG:
+                print(f"[{datetime.now()}] Syncing...")
+            console()
+            sync()
+            time.sleep(UpdateTime)
+    except KeyboardInterrupt:
+        print(f"[{datetime.now()}] Interrupted by user. Shutting down...")
+        raise
+    except Exception as e:
+        logging.error(f"An error occurred in main_loop: {e}")
+        raise
+    finally:
+        try:
+            system_GoFlow.update_cell(1, 8, "")
+        except Exception as e:
+            logging.error(f"Failed to update cell in finally block: {e}")
+        print(f"[{datetime.now()}] ### Stop ###")
+
+while True:
+    try:
+        main_loop()
+        break  # Exit if main_loop finishes normally (e.g., Run set to False)
+    except KeyboardInterrupt:
+        break
+    except Exception as e:
+        wait_minutes = 5
+        print(f"[{datetime.now()}] Fatal error occurred. Restarting in {wait_minutes} minutes...")
+        logging.error(f"Fatal error, restarting in {wait_minutes} minutes: {e}")
+        time.sleep(wait_minutes * 60)
 
 
 
