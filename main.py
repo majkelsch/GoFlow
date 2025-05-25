@@ -1,5 +1,4 @@
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import time
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -15,12 +14,16 @@ with open("config.json") as f:
     config = json.load(f)
 
 # Setup
-SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
-         "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+SCOPE = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive"
+]
 
-CREDS = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
+CREDS = service_account.Credentials.from_service_account_file("credentials.json", scopes=SCOPE)
 DEBUG = config["DEBUG"]
-UpdateTime = config["UpdateTime"]
+UpdateTime = config["UPDATE_TIME"]
 GOFLOW_ID = config["GOFLOW_SPREADSHEET_ID"]
 SOLIDPIXELS_ID = config["SOLIDPIXELS_SPREADSHEET_ID"]
 
@@ -169,6 +172,21 @@ def console():
         system_GoFlow.update_cell(2, 8, f"[{datetime.now()}] Update time set to {UpdateTime} seconds")
         
     system_GoFlow.update_cell(1, 8, "")
+
+
+def sortAndDistribute():
+    data = sheet_GoFlow.get_all_values()
+    people = system_GoFlow.col_values(5)[0:]
+    for person in people:
+        personData = []
+        for row in data:
+            if row[4] == person:
+                personData.append(row)
+
+        if spreadsheet_GoFlow.worksheet(str(person)).row_count > 1:
+            spreadsheet_GoFlow.worksheet(str(person)).batch_clear(["A2:Z1000"])  # Clear existing data
+        spreadsheet_GoFlow.worksheet(str(person)).insert_rows(personData, 2)
+
     
 
 def sync():
@@ -183,6 +201,7 @@ def main_loop():
                 print(f"[{datetime.now()}] Syncing...")
             console()
             sync()
+            #sortAndDistribute()
             time.sleep(UpdateTime)
     except KeyboardInterrupt:
         print(f"[{datetime.now()}] Interrupted by user. Shutting down...")

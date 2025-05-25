@@ -3,6 +3,7 @@ depc.py
 
 # Credentials
 credentials.json
+_credentials.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
