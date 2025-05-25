@@ -121,7 +121,6 @@ def syncSupport():
 
         updates = []
         task_updates = []
-
         for index, row in enumerate(data):
             if len(row) > 7 and row[7] != "TRUE":
                 total += 1
@@ -145,7 +144,6 @@ def syncSupport():
         if updates:
             body = {"valueInputOption": "USER_ENTERED", "data": updates}
             service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_Solidpixels.id, body=body).execute()
-
         # Batch create tasks
         for row, taskData in task_updates:
             createTask(service, spreadsheet_GoFlow, sheet_GoFlow, row, taskData)
@@ -153,6 +151,7 @@ def syncSupport():
         system_GoFlow.update_cell(1, 2, lastindex)
         system_GoFlow.update_cell(5, 2, False)
         system_GoFlow.update_cell(2, 8, f"[{datetime.now()}] Synced Successfully [{success}/{total}]")
+        print(f"[{datetime.now()}] Synced Successfully [{success}/{total}]")
         logging.info(f"Synced Successfully [{success}/{total}]")
     except Exception as e:
         print(f"[{datetime.now()}] Error in syncSupport: {e}")
