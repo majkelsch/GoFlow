@@ -122,12 +122,12 @@ def syncSupport():
         updates = []
         task_updates = []
         for index, row in enumerate(data):
-            if len(row) > 7 and row[7] != "TRUE":
+            if len(row) > 8 and row[8] != "TRUE":
                 total += 1
                 try:
                     task_id = f"SUP{str(datetime.now().year)[2:]}{str(lastindex).zfill(4)}"
                     updates.append({
-                        "range": f"Solidpixels!G{index + 2}:H{index + 2}",
+                        "range": f"Solidpixels!H{index + 2}:I{index + 2}",
                         "values": [[task_id, True]]
                     })
                     taskData = [task_id, row[0], row[2], "SUPPORT", defOwner, "Low", "Income", datetime.now().replace(microsecond=0), 0, "", "", row[4]]
