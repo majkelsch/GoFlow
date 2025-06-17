@@ -1,3 +1,9 @@
+# Temporarily ignored
+demofile.json
+goflow.db
+tasks-temp.db
+tasks.db
+
 # Deprecated files
 depc.py
 
