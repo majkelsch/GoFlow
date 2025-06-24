@@ -91,15 +91,15 @@ def extractTextFromPayload(message_payload):
         for part in message_payload['parts']:
             if part['mimeType'] == 'text/plain':
                 if 'body' in part and 'data' in part['body']:
-                    print(part['body']['data'])
+                    return base64.urlsafe_b64decode(part['body']['data'].encode('utf-8')).decode('utf-8', errors='ignore')
             if 'parts' in part:
                 recursive_text = extractTextFromPayload(part)
                 if recursive_text:
                     return recursive_text
     elif 'body' in message_payload and 'data' in message_payload['body']:
         if message_payload['mimeType'] == 'text/plain':
-            print(message_payload['body']['data'])
-    #return None
+            return base64.urlsafe_b64decode(message_payload['body']['data'].encode('utf-8')).decode('utf-8', errors='ignore')
+    return None
 
 
 def getGmailData():
@@ -117,42 +117,48 @@ def getGmailData():
             print(f'An error occurred: {error}')
             break
     
-    details = []
     for message in messages[:25]:
+        client = "Unknown"
+        subject = "No Subject"
+        date = datetime.now()
+        description = "No description"
         try:
             response = gmail_service.users().messages().get(userId='me', id=message['id'], format='full').execute()
+            
+            description = extractTextFromPayload(response['payload'])
+
 
             for i in response['payload']['headers']:
                 if i['name'] == "From":
                     print(i['value'])
+                    client = i['value']
                 if i['name'] == "Subject":
                     print(i['value'])
+                    subject = i['value']
                 if i['name'] == "Date":
                     print(i['value'])
+                    date = i['value'].replace(" (CEST)", "")
+                    date = datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z")
 
-            print(extractTextFromPayload(response['payload']))
-
-
-            #if "parts" in response['payload']['parts'][0]:
-            #    #print("True")
-            #    print(response['payload']['parts'][0]['parts'][0]['body']['data'])
-            #else:
-            #    #print("False")
-            #    print(response['payload']['parts'][0]['body']['data'])
-
-            #for i in response['payload']['parts'][0]:
-            #    print(i)
-            #    print("-" *20)
-            #print(response['payload']['parts'][0]['parts'][0]['body']['data'])
-            #print(base64.urlsafe_b64decode(response['payload']['parts'][0]['parts'][0]['body']['data'].encode('utf-8')).decode('utf-8', errors='ignore'))
-            #details.append(response['payload']['parts'][0])
+            db_control_simple.createTask_DB({
+                "support_id": f"SUP{str(datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
+                "client": client,
+                "project": subject,
+                "title": subject,
+                "description": description,
+                "owner": DEFAULT_SUPPORT_OWNER,
+                "priority": "Low",
+                "status": "Income",
+                "arrived": date.replace(microsecond=0),
+                "duration": 0,
+                "started": None,
+                "finished": None
+            })
+            
         except HttpError as error:
             print(f'An error occurred: {error}')
             break
         print("#" *20)
-    
-    with open("demofile.json", "w") as f:
-        f.write(json.dumps(details, indent=4))
 
 
     
