@@ -12,6 +12,7 @@ from db_control_simple import TaskDict
 import base64
 import email
 import html
+from dateutil import parser as date_parser
 
 import json
 
@@ -37,6 +38,7 @@ UpdateTime = 300
 GOFLOW_ID = os.getenv("GOFLOW_SPREADSHEET_ID")
 SOLIDPIXELS_ID = os.getenv("SOLIDPIXELS_SPREADSHEET_ID")
 DEFAULT_SUPPORT_OWNER = os.getenv("DEFAULT_SUPPORT_OWNER")
+
 if DEFAULT_SUPPORT_OWNER is None:
     raise ValueError("DEFAULT_SUPPORT_OWNER environment variable is not set or is missing.")
 USER_EMAIL_TO_IMPERSONATE = os.getenv("GOOGLE_SUPPORT_EMAIL")
@@ -117,48 +119,55 @@ def getGmailData():
             print(f'An error occurred: {error}')
             break
     
-    for message in messages[:25]:
+    for message in messages:
         client = "Unknown"
         subject = "No Subject"
-        date = datetime.now()
-        description = "No description"
+        email_id = "No ID"
         try:
             response = gmail_service.users().messages().get(userId='me', id=message['id'], format='full').execute()
             
-            description = extractTextFromPayload(response['payload'])
+            email_id = response['id']
+            if db_control_simple.check_existingMailID(email_id) == False:
 
+                description = extractTextFromPayload(response['payload'])
+                if description == None:
+                    description = "Unknown"
 
-            for i in response['payload']['headers']:
-                if i['name'] == "From":
-                    print(i['value'])
-                    client = i['value']
-                if i['name'] == "Subject":
-                    print(i['value'])
-                    subject = i['value']
-                if i['name'] == "Date":
-                    print(i['value'])
-                    date = i['value'].replace(" (CEST)", "")
-                    date = datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z")
+                for i in response['payload']['headers']:
+                    if i['name'] == "From":
+                        client = i['value']
+                        print(client)
+                    if i['name'] == "Subject":
+                        subject = i['value']
+                        print(subject)
+                    if i['name'] == "Date":
+                        date_str = i['value'].replace(" (CEST)", "").replace(" (GMT)", "").replace(" (CET)", "").replace(" (PST)", "").replace(" GMT", "")
+                        try:
+                            date = date_parser.parse(date_str)
+                        except Exception as e:
+                            print(f"Failed to parse date: {date_str}, error: {e}")
+                            date = datetime.now()
+                        print(date)
 
-            db_control_simple.createTask_DB({
-                "support_id": f"SUP{str(datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
-                "client": client,
-                "project": subject,
-                "title": subject,
-                "description": description,
-                "owner": DEFAULT_SUPPORT_OWNER,
-                "priority": "Low",
-                "status": "Income",
-                "arrived": date.replace(microsecond=0),
-                "duration": 0,
-                "started": None,
-                "finished": None
-            })
+                db_control_simple.createTask_DB({
+                    "support_id": f"SUP{str(datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
+                    "client": client,
+                    "project": subject,
+                    "title": subject,
+                    "description": description,
+                    "owner": DEFAULT_SUPPORT_OWNER,  # type: ignore
+                    "priority": "Low",
+                    "status": "Income",
+                    "arrived": date.replace(microsecond=0), # type: ignore
+                    "duration": 0,
+                    "started": None,
+                    "finished": None,
+                    "email_id": email_id
+                })
             
         except HttpError as error:
             print(f'An error occurred: {error}')
             break
-        print("#" *20)
 
 
     

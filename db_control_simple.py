@@ -46,10 +46,12 @@ class Tasks(Base):
     owner = Column(String, nullable=False)
     priority = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    arrived = Column(DateTime, nullable=True)  # Můžete použít DateTime pro datum a čas
-    duration = Column(Float, nullable=True, default=0)  # Doba trvání v minutách
-    started = Column(DateTime, nullable=True)  # Můžete použít DateTime pro datum a čas
-    finished = Column(DateTime, nullable=True)  # Můžete použít DateTime pro datum a čas
+    arrived = Column(DateTime, nullable=True)
+    duration = Column(Float, nullable=True, default=0)
+    started = Column(DateTime, nullable=True)
+    finished = Column(DateTime, nullable=True)
+    email_id = Column(String, nullable=True)
+
     
 
     def __repr__(self):
@@ -102,7 +104,8 @@ def createTask_DB(data: TaskDict):
             arrived=data.get('arrived', None),
             duration=data.get('duration', 0.0),
             started=data.get('started', None),
-            finished=data.get('finished', None)
+            finished=data.get('finished', None),
+            email_id=data.get('email_id', None)
         )
         session.add(newTask)
         session.commit()
@@ -144,3 +147,11 @@ def get_newTaskID():
     finally:
         session.close()
 
+
+def check_existingMailID(id):
+    session = db_init()
+    try:
+        exists = session.query(Tasks).filter(Tasks.email_id == id).first()
+        return exists is not None
+    finally:
+        session.close()
