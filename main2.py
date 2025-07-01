@@ -1,3 +1,5 @@
+#str(datetime.strptime(str(datetime.now() + timedelta(days=7)), "%Y-%m-%d %H:%M:%S.%f").replace(microsecond=0))
+
 import html.parser
 import gspread
 import time
@@ -5,7 +7,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.errors import HttpError
 import dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import db_control_simple
 from db_control_simple import TaskDict
@@ -13,6 +15,7 @@ import base64
 import email
 import html
 from dateutil import parser as date_parser
+import itertools
 
 import json
 
@@ -58,14 +61,22 @@ if SOLIDPIXELS_ID is None:
 spreadsheet_Solidpixels = client.open_by_key(SOLIDPIXELS_ID)
 sheet_Solidpixels = spreadsheet_Solidpixels.worksheet("Solidpixels")
 
+if GOFLOW_ID is None:
+    raise ValueError("GOFLOW_ID environment variable is not set or is missing.")
+spreadsheet_GoFlow = client.open_by_key(GOFLOW_ID)
+# Change to worksheet("GoFlow") when put to production
+sheet_GoFlow = spreadsheet_GoFlow.worksheet("EXP")
+
 
 def getSolidpixelsData():
     try:
-        support_data = sheet_Solidpixels.get_all_values() # 1 Read request
+        support_data = sheet_Solidpixels.get_all_values()
         support_data.pop(0)
 
+        rowIndex = 2
         for row in support_data:
-            if row[8] != 'TRUE':
+            # Change to row[8] when put to production
+            if row[9] != 'TRUE':
                 newData: TaskDict = {
                     "support_id": f"SUP{str(datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
                     "client": str(row[0]),
@@ -76,14 +87,20 @@ def getSolidpixelsData():
                     "priority": "Low",
                     "status": "Income",
                     "arrived": datetime.now().replace(microsecond=0),
+                    "due": datetime.now().replace(microsecond=0) + timedelta(days=7),
                     "duration": 0,
                     "started": None,
-                    "finished": None
+                    "finished": None,
+                    "last_edit_by": "GoFlow Importer"
                 }
                 db_control_simple.createTask_DB(newData)
+                time.sleep(1)
+                # Change to sheet_Solidpixels.update_cell(rowIndex, 9, True) when put to production
+                sheet_Solidpixels.update_cell(rowIndex, 10, True)
+                rowIndex += 1
 
     except Exception as e:
-        print(f"[{datetime.now()}] Error in syncSupport: {e}")
+        print(f"[{datetime.now()}] Error in getSolidpixelsData: {e}")
 
 
 
@@ -115,8 +132,8 @@ def getGmailData():
             page_token = response.get('nextPageToken', None)
             if not page_token:
                 break
-        except HttpError as error:
-            print(f'An error occurred: {error}')
+        except HttpError as e:
+            print(f'[{datetime.now()}] Error in getGmailData {e}')
             break
     
     for message in messages:
@@ -136,43 +153,186 @@ def getGmailData():
                 for i in response['payload']['headers']:
                     if i['name'] == "From":
                         client = i['value']
-                        print(client)
+                        #print(client)
                     if i['name'] == "Subject":
                         subject = i['value']
-                        print(subject)
+                        #print(subject)
                     if i['name'] == "Date":
                         date_str = i['value'].replace(" (CEST)", "").replace(" (GMT)", "").replace(" (CET)", "").replace(" (PST)", "").replace(" GMT", "")
                         try:
                             date = date_parser.parse(date_str)
                         except Exception as e:
-                            print(f"Failed to parse date: {date_str}, error: {e}")
+                            print(f"[{datetime.now()}] Failed to parse date: {date_str}, error: {e}")
                             date = datetime.now()
-                        print(date)
+                        #print(date)
 
                 db_control_simple.createTask_DB({
                     "support_id": f"SUP{str(datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
                     "client": client,
-                    "project": subject,
+                    "project": client,
                     "title": subject,
                     "description": description,
                     "owner": DEFAULT_SUPPORT_OWNER,  # type: ignore
                     "priority": "Low",
                     "status": "Income",
                     "arrived": date.replace(microsecond=0), # type: ignore
+                    "due": date.replace(microsecond=0) + timedelta(days=7), # type: ignore
                     "duration": 0,
                     "started": None,
                     "finished": None,
-                    "email_id": email_id
+                    "email_id": email_id,
+                    "last_edit_by": "GoFlow Importer"
                 })
             
         except HttpError as error:
-            print(f'An error occurred: {error}')
+            print(f'[{datetime.now()}] An error occurred: {error}')
             break
 
+def createTask(data):
+    body = {
+        "requests": [
+            {
+                "insertDimension": {
+                    "range": {
+                        "sheetId": sheet_GoFlow.id,
+                        "dimension": "ROWS",
+                        "startIndex": 1,
+                        "endIndex": 2
+                    },
+                    "inheritFromBefore": True
+                }
+            },
+            {
+                "updateCells": {
+                    "rows": [
+                        {
+                            "values": [
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['support_id']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['client']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['project']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['title']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": DEFAULT_SUPPORT_OWNER
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['priority']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['status']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": str(data['arrived'])
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": str(data['due'])
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": data['duration']
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": 0
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": str(data['started']) if data['started'] is not None else ""
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": str(data['finished']) if data['finished'] is not None else ""
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": data['description']
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "fields": "*",
+                    "start": {
+                        "sheetId": sheet_GoFlow.id,
+                        "rowIndex": 1,
+                        "columnIndex": 0
+                    }
+                }
+            },
+            {
+                "updateDimensionProperties": {
+                    "properties": {
+                        "pixelSize": 28
+                    },
+                    "fields": "*",
+                    "range": {
+                        "sheetId": sheet_GoFlow.id,
+                        "dimension": "ROWS",
+                        "startIndex": 1,
+                        "endIndex": 2
+                    }
+                }
+            }
+        ]
+    }
 
+    response = sheet_service.spreadsheets().batchUpdate(
+        spreadsheetId=GOFLOW_ID,
+        body=body
+    ).execute()
+
+def exportTasksToSheets():
+    tasks = db_control_simple.get_allTasks()
+    tasksID = []
+    for x in tasks:
+        tasksID.append(x['support_id'])
+    tasksID = set(tasksID)
+    existingTasksID = list(itertools.chain.from_iterable(sheet_GoFlow.get_values(f"A2:A{sheet_GoFlow.row_count}")))
+    existingTasksID = set(existingTasksID)
+
+    difference = tasksID.symmetric_difference(existingTasksID)
+
+    pendingTasks = sorted(list(difference))
+    for id in pendingTasks[:1]:
+        taskData = db_control_simple.get_taskBySupportID(id)
+        time.sleep(1)
+        createTask(taskData) 
+
+    
     
 
 
-       
+
+#createTask()
+exportTasksToSheets()
 #getSolidpixelsData()
-getGmailData()
+#getGmailData()

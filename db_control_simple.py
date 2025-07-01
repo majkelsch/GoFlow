@@ -19,9 +19,11 @@ class TaskDict(TypedDict):
     priority: str
     status: str
     arrived: Optional[datetime.datetime]
+    due: Optional[datetime.datetime]
     duration: float
     started: Optional[datetime.datetime]
     finished: Optional[datetime.datetime]
+    last_edit_by: str
 
 class ProjectDict(TypedDict):
     url: str
@@ -47,10 +49,12 @@ class Tasks(Base):
     priority = Column(String, nullable=False)
     status = Column(String, nullable=False)
     arrived = Column(DateTime, nullable=True)
+    due = Column(DateTime, nullable=True)
     duration = Column(Float, nullable=True, default=0)
     started = Column(DateTime, nullable=True)
     finished = Column(DateTime, nullable=True)
     email_id = Column(String, nullable=True)
+    last_edit_by = Column(String, nullable=True)
 
     
 
@@ -102,10 +106,12 @@ def createTask_DB(data: TaskDict):
             priority=data['priority'],
             status=data['status'],
             arrived=data.get('arrived', None),
+            due=data.get('due', None),
             duration=data.get('duration', 0.0),
             started=data.get('started', None),
             finished=data.get('finished', None),
-            email_id=data.get('email_id', None)
+            email_id=data.get('email_id', None),
+            last_edit_by=data.get('last_edit_by', None)
         )
         session.add(newTask)
         session.commit()
@@ -115,7 +121,7 @@ def createTask_DB(data: TaskDict):
     finally:
         session.close()
 
-def creteateProject_DB(data: ProjectDict):
+def createProject_DB(data: ProjectDict):
     session = db_init()
 
     try:
@@ -153,5 +159,37 @@ def check_existingMailID(id):
     try:
         exists = session.query(Tasks).filter(Tasks.email_id == id).first()
         return exists is not None
+    finally:
+        session.close()
+
+
+def set_lastEditBy(id):
+    session = db_init()
+    try:
+        row = session.query(Tasks).filter(Tasks.id == id).first()
+        if row is not None:
+            row.last_edit_by = "GoFlow Importer" # type: ignore
+            session.commit()
+        else:
+            print(f"Task with id {id} not found.")
+    finally:
+        session.close()
+
+def get_allTasks():
+    session = db_init()
+    try:
+        tasks = session.query(Tasks).all()
+        return [task.__dict__ for task in tasks]
+    finally:
+        session.close()
+
+def get_taskBySupportID(id):
+    session = db_init()
+    try:
+        task = session.query(Tasks).filter(Tasks.support_id == id).first().__dict__.copy()
+        if task is not None:
+            return task
+        else:
+            print(f"Task with support_id {id} not found.")
     finally:
         session.close()
