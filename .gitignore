@@ -3,11 +3,14 @@ demofile.json
 goflow.db
 tasks-temp.db
 tasks.db
+token.pickle
+
 
 # Deprecated files
 depc.py
 
 # Credentials
+credentials_oauth2.json
 credentials.json
 _credentials.json
 

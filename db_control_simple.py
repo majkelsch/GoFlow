@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Date, Float, func
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Date, Float, func, text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.schema import Computed
 import datetime
 from typing import TypedDict, Optional
 
@@ -33,6 +34,17 @@ class ProjectDict(TypedDict):
     mail: Optional[str]
     inv_mail: Optional[str]
     ignore: Optional[int]
+
+class Employees(Base):
+    __tablename__ = 'employees'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    full_name = Column(String, Computed(text("first_name || ' ' || last_name"), persisted=True), nullable=False)
+    email = Column(String, nullable=False)
+    phone = Column(String, nullable=False)
+    position = Column(String, nullable=False)
+
     
     
 
@@ -193,3 +205,18 @@ def get_taskBySupportID(id):
             print(f"Task with support_id {id} not found.")
     finally:
         session.close()
+
+
+def get_employeeByFullName(full_name):
+    session = db_init()
+    try:
+        employee = session.query(Employees).filter(Employees.full_name == full_name).first()
+        if employee is not None:
+            return employee.__dict__
+        else:
+            print(f"Employee with full_name {full_name} not found.")
+    finally:
+        session.close()
+
+    
+#print(get_employeeByFullName('Michal Schenk')['email'])

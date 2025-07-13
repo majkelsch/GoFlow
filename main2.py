@@ -6,6 +6,7 @@ import time
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.errors import HttpError
+from google_auth_oauthlib.flow import InstalledAppFlow
 import dotenv
 from datetime import datetime, timedelta
 import os
@@ -13,6 +14,7 @@ import db_control_simple
 from db_control_simple import TaskDict
 import base64
 import email
+from email.message import EmailMessage
 import html
 from dateutil import parser as date_parser
 import itertools
@@ -322,7 +324,7 @@ def exportTasksToSheets():
     difference = tasksID.symmetric_difference(existingTasksID)
 
     pendingTasks = sorted(list(difference))
-    for id in pendingTasks[:1]:
+    for id in pendingTasks[:5]:
         taskData = db_control_simple.get_taskBySupportID(id)
         time.sleep(1)
         createTask(taskData) 
