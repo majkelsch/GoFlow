@@ -332,11 +332,26 @@ def exportTasksToSheets():
         createTask(taskData) 
 
     
-    
+
+def main_loop():
+    while True:
+        try:
+            getSolidpixelsData()
+            getGmailData()
+            exportTasksToSheets()
+        except Exception as e:
+            print(f"[{datetime.now()}] Error in main_loop: {e}")
+        time.sleep(UpdateTime)
+
+
+# Main execution
+while True:
+    try:
+        main_loop()
+    except Exception as e:
+        print(f"[{datetime.now()}] Fatal Error in main execution: {e}")
+        mailing.send_email(os.getenv("ADMIN_EMAIL"), "[ERROR] GoFlow Loop", f"An error occurred in the GoFlow Importer: {e}")
+        time.sleep(UpdateTime)
 
 
 
-
-getSolidpixelsData()
-getGmailData()
-exportTasksToSheets()
