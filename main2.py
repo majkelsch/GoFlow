@@ -278,7 +278,7 @@ def createTask(data):
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "stringValue": data['description']
+                                        "stringValue": data['description'][:5000]
                                     }
                                 }
                             ]
