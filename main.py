@@ -8,10 +8,11 @@ import json
 from datetime import datetime
 import logging
 import sys
+import os
+import dotenv
 
 logging.basicConfig(filename='goflow.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
-with open("config.json") as f:
-    config = json.load(f)
+dotenv.load_dotenv()
 
 # Setup
 SCOPE = [
@@ -22,10 +23,15 @@ SCOPE = [
 ]
 
 CREDS = service_account.Credentials.from_service_account_file("credentials.json", scopes=SCOPE)
-DEBUG = config["DEBUG"]
-UpdateTime = config["UPDATE_TIME"]
-GOFLOW_ID = config["GOFLOW_SPREADSHEET_ID"]
-SOLIDPIXELS_ID = config["SOLIDPIXELS_SPREADSHEET_ID"]
+DEBUG = False
+UpdateTime = 300
+GOFLOW_ID = os.getenv("GOFLOW_SPREADSHEET_ID")
+if GOFLOW_ID is None:
+    raise ValueError("GOFLOW_ID not found")
+SOLIDPIXELS_ID = os.getenv("SOLIDPIXELS_SPREADSHEET_ID")
+if SOLIDPIXELS_ID is None:
+    raise ValueError("SOLIDPIXELS_ID not found")
+DEFAULT_SUPPORT_OWNER = os.getenv("DEFAULT_SUPPORT_OWNER")
 
 Run = True
 
