@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 import os
 import db_control_simple
 from db_control_simple import TaskDict
+import mailing
+
 import base64
 import email
 from email.message import EmailMessage
@@ -324,9 +326,9 @@ def exportTasksToSheets():
     difference = tasksID.symmetric_difference(existingTasksID)
 
     pendingTasks = sorted(list(difference))
-    for id in pendingTasks[:5]:
+    for id in pendingTasks:
         taskData = db_control_simple.get_taskBySupportID(id)
-        time.sleep(1)
+        time.sleep(2)
         createTask(taskData) 
 
     
@@ -334,7 +336,7 @@ def exportTasksToSheets():
 
 
 
-#createTask()
+
+getSolidpixelsData()
+getGmailData()
 exportTasksToSheets()
-#getSolidpixelsData()
-#getGmailData()

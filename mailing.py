@@ -64,11 +64,33 @@ def send_html_email(to, subject, body):
 
 def generateTaskEmail(html_file_path, data):
     with open(html_file_path, 'r', encoding='utf-8') as file:
-        html_body = file.read().replace('{{data}}', repr(data))
+        html_body = file.read().replace('{{data}}', 
+                                        f"""<table>
+                                                <tr>
+                                                    <th>Title:</th>
+                                                    <td>{data['title']}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Description:</th>
+                                                    <td>{data['description']}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Client:</th>
+                                                    <td>{data['client']}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Priority:</th>
+                                                    <td>{data['priority']}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Due Date:</th>
+                                                    <td>{data['due'].strftime("%d.%m.%Y %H:%M:%S")}</td>
+                                                </tr>
+                                            </table>""")
     return html_body
 
-# ---- Run it ----
 if __name__ == '__main__':
     #send_email(service, "michal@cloudbusiness.cz", "Test Email", "This is a test email sent via Gmail API and OAuth2.")
-    send_html_email("michal@cloudbusiness.cz", "Test HTML", generateTaskEmail('task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250001")))
+    send_html_email(db_control_simple.get_employeeByFullName(db_control_simple.get_taskBySupportID("SUP250008")["owner"])["email"], "Test HTML", generateTaskEmail('task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250008")))
     #print(generateTaskEmail('task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250001")))
+
