@@ -1,5 +1,8 @@
 #str(datetime.strptime(str(datetime.now() + timedelta(days=7)), "%Y-%m-%d %H:%M:%S.%f").replace(microsecond=0))
 
+# Custom libs
+import app_secrets
+
 import html.parser
 import gspread
 import time
@@ -42,15 +45,10 @@ client = gspread.authorize(SHEET_CREDS)
 
 DEBUG = False
 UpdateTime = 300
-GOFLOW_ID = os.getenv("GOFLOW_SPREADSHEET_ID")
-SOLIDPIXELS_ID = os.getenv("SOLIDPIXELS_SPREADSHEET_ID")
-DEFAULT_SUPPORT_OWNER = os.getenv("DEFAULT_SUPPORT_OWNER")
-
-if DEFAULT_SUPPORT_OWNER is None:
-    raise ValueError("DEFAULT_SUPPORT_OWNER environment variable is not set or is missing.")
-USER_EMAIL_TO_IMPERSONATE = os.getenv("GOOGLE_SUPPORT_EMAIL")
-if USER_EMAIL_TO_IMPERSONATE is None:
-    raise ValueError("USER_EMAIL_TO_IMPERSONATE environment variable is not set or is missing.")
+GOFLOW_ID = app_secrets.get("GOFLOW_SPREADSHEET_ID")
+SOLIDPIXELS_ID = app_secrets.get("SOLIDPIXELS_SPREADSHEET_ID")
+DEFAULT_SUPPORT_OWNER = app_secrets.get("DEFAULT_SUPPORT_OWNER")
+USER_EMAIL_TO_IMPERSONATE = app_secrets.get("GOOGLE_SUPPORT_EMAIL")
 
 
 sheet_service = build('sheets', 'v4', credentials=SHEET_CREDS)
@@ -59,14 +57,9 @@ delegated_creds = GMAIL_CREDS.with_subject(USER_EMAIL_TO_IMPERSONATE)
 gmail_service = build('gmail', 'v1', credentials=delegated_creds)
 
 
-
-if SOLIDPIXELS_ID is None:
-    raise ValueError("SOLIDPIXELS_SPREADSHEET_ID environment variable is not set or is missing.")
 spreadsheet_Solidpixels = client.open_by_key(SOLIDPIXELS_ID)
 sheet_Solidpixels = spreadsheet_Solidpixels.worksheet("Solidpixels")
 
-if GOFLOW_ID is None:
-    raise ValueError("GOFLOW_ID environment variable is not set or is missing.")
 spreadsheet_GoFlow = client.open_by_key(GOFLOW_ID)
 # Change to worksheet("GoFlow") when put to production
 sheet_GoFlow = spreadsheet_GoFlow.worksheet("EXP")
@@ -345,13 +338,13 @@ def main_loop():
 
 
 # Main execution
-while True:
-    try:
-        main_loop()
-    except Exception as e:
-        print(f"[{datetime.now()}] Fatal Error in main execution: {e}")
-        mailing.send_email(os.getenv("ADMIN_EMAIL"), "[ERROR] GoFlow Loop", f"An error occurred in the GoFlow Importer: {e}")
-        time.sleep(UpdateTime)
+#while True:
+#    try:
+#        main_loop()
+#    except Exception as e:
+#        print(f"[{datetime.now()}] Fatal Error in main execution: {e}")
+#        mailing.send_email(os.getenv("ADMIN_EMAIL"), "[ERROR] GoFlow Loop", f"An error occurred in the GoFlow Importer: {e}")
+#        time.sleep(UpdateTime)
 
 
 
