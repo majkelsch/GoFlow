@@ -218,5 +218,16 @@ def get_employeeByFullName(full_name):
     finally:
         session.close()
 
+def get_employeeByEmail(email):
+    session = db_init()
+    try:
+        employee = session.query(Employees).filter(Employees.email == email).first()
+        if employee is not None:
+            return employee.__dict__
+        else:
+            print(f"Employee with email {email} not found.")
+    finally:
+        session.close()
+
     
 #print(get_employeeByFullName('Michal Schenk')['email'])
