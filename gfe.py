@@ -157,20 +157,21 @@ def createTask(data):
 
 def exportTasksToSheets():
     tasks = db_control_simple.get_allTasks()
-    tasksID = []
-    for x in tasks:
-        tasksID.append(x['support_id'])
-    tasksID = set(tasksID)
-    existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").row_count}')))
-    existingTasksID = set(existingTasksID)
-    
+    if len(tasks) != 0:
+        tasksID = []
+        for x in tasks:
+            tasksID.append(x['support_id'])
+        tasksID = set(tasksID)
+        existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").row_count}')))
+        existingTasksID = set(existingTasksID)
+        
 
-    difference = tasksID.symmetric_difference(existingTasksID)
+        difference = tasksID.symmetric_difference(existingTasksID)
 
-    pendingTasks = sorted(list(difference))
-    for id in pendingTasks:
-        taskData = db_control_simple.get_taskBySupportID(id)
-        time.sleep(2)
-        createTask(taskData)
-        print("Here")
-        gfm.send_html_email(db_control_simple.get_employeeByFullName(taskData['owner'])['email'], "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
+        pendingTasks = sorted(list(difference))
+        for id in pendingTasks:
+            taskData = db_control_simple.get_taskBySupportID(id)
+            time.sleep(2)
+            createTask(taskData)
+            print("Here")
+            gfm.send_html_email(db_control_simple.get_employeeByFullName(taskData['owner'])['email'], "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))

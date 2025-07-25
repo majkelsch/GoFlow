@@ -13,6 +13,7 @@ test.py
 demofile.json
 goflow.db
 tasks-temp.db
+_tasks-temp.db
 tasks.db
 token.pickle
 
