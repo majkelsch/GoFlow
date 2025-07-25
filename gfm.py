@@ -1,6 +1,5 @@
 # Custom Libs
 import db_control_simple
-import gftools
 
 # Libs
 import os
