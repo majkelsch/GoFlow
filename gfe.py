@@ -173,5 +173,9 @@ def exportTasksToSheets():
             taskData = db_control_simple.get_taskBySupportID(id)
             time.sleep(2)
             createTask(taskData)
-            print("Here")
-            gfm.send_html_email(db_control_simple.get_employeeByFullName(taskData['owner'])['email'], "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
+            result = db_control_simple.get_employeeByEmail(taskData['owner'])
+            if isinstance(result, dict):
+                owner_email = result['email']
+            else:
+                owner_email = app_secrets.get("GOOGLE_SUPPORT_EMAIL")
+            gfm.send_html_email(owner_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))

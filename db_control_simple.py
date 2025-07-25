@@ -231,7 +231,8 @@ def get_employeeByEmail(email):
         if employee is not None:
             return employee.__dict__
         else:
-            print(f"Employee with email {email} not found.")
-            return "Error"
+            raise ValueError(f"Employee with email {email} not found.")
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in db_control_simple.py: {e}")
     finally:
         session.close()
