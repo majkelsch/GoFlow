@@ -202,9 +202,9 @@ def get_allTasks():
 def get_taskBySupportID(id):
     session = db_init()
     try:
-        task = session.query(Tasks).filter(Tasks.support_id == id).first().__dict__.copy()
-        if task is not None:
-            return task
+        task_obj = session.query(Tasks).filter(Tasks.support_id == id).first()
+        if task_obj is not None:
+            return task_obj.__dict__.copy()
         else:
             print(f"Task with support_id {id} not found.")
             sys.exit(-1)
