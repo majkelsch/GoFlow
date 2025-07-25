@@ -1,3 +1,8 @@
+# Custom Libs
+import db_control_simple
+import gftools
+
+# Libs
 import os
 import base64
 from email.mime.text import MIMEText
@@ -5,11 +10,16 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import pickle
-import db_control_simple
 import json
 
-# Scopes: Only sending email
+###################
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+###################
+
+
+
+
+
 
 def gmail_authenticate():
     creds = None
@@ -31,6 +41,16 @@ def gmail_authenticate():
             pickle.dump(creds, token)
 
     return build('gmail', 'v1', credentials=creds)
+
+
+
+
+
+
+
+
+
+
 
 def create_message(to, subject, message_text):
     message = MIMEText(message_text)
@@ -66,6 +86,11 @@ def send_html_email(to:str, subject:str, body:str):
 
 
 
+
+
+
+
+
 def generateTaskEmail(html_file_path, data):
     with open(html_file_path, 'r', encoding='utf-8') as file:
         html_body = file.read().replace('{{data}}', 
@@ -88,13 +113,8 @@ def generateTaskEmail(html_file_path, data):
                                                 </tr>
                                                 <tr>
                                                     <th>Due Date:</th>
-                                                    <td>{data['due'].strftime("%d.%m.%Y %H:%M:%S")}</td>
+                                                    <td>{data['due'].strftime("%d.%m.%Y %H:%M:%S") if str(type(data['due'])) != "<class 'NoneType'>" else "None"}</td>
                                                 </tr>
                                             </table>""")
+        # I can't stress enough how much I hate 'str(type(data['due'])) != "<class 'NoneType'>"' I want to change it to something more normal but I have no idea how, at least now.
     return html_body
-
-if __name__ == '__main__':
-    #send_email(service, "michal@cloudbusiness.cz", "Test Email", "This is a test email sent via Gmail API and OAuth2.")
-    send_html_email(db_control_simple.get_employeeByFullName(db_control_simple.get_taskBySupportID("SUP250008")["owner"])["email"], "Test HTML", generateTaskEmail('email_templates/task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250008")))
-    #print(generateTaskEmail('task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250001")))
-

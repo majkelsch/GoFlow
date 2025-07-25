@@ -1,17 +1,40 @@
-from flask import Flask, request
+# Custom libs
+import app_secrets
+import gfi
+import gfe
 import db_control_simple
+
+# Libs
+import flask
 import threading
 import datetime
-from datetime import timedelta
+import time
+from multiprocessing import Process
 import os
-import dotenv
 
-#dotenv.load_dotenv()
-#DEFAULT_SUPPORT_OWNER = os.getenv("DEFAULT_SUPPORT_OWNER")
-#if DEFAULT_SUPPORT_OWNER is None:
-#    raise ValueError("DEFAULT_SUPPORT_OWNER environment variable is not set or is missing.")
 
-app = Flask(__name__)
+#############
+app = flask.Flask(__name__)
+
+updateTime = 30
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def accept_request(data):
     if data.get("command") == "create_task":
@@ -25,25 +48,54 @@ def accept_request(data):
                     "priority": data["task_data"].get("priority", "No Priority"),
                     "status": data["task_data"].get("status", "No Status"),
                     "arrived": datetime.datetime.now().replace(microsecond=0),
-                    "due": datetime.datetime.now().replace(microsecond=0) + timedelta(days=7),
+                    "due": datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7),
                     "duration": 0,
                     "started": None,
                     "finished": None,
                     "email_id": None,
                     "last_edit_by": data["task_data"].get("last_edit_by", "No Last Edit By")
                 })
-        # Add a way to "intercept" ongoing export and include this incoming task into it. Also Declutter the whole project and change hierarchy to be HTTP based server
-        #main2.exportTasksToSheets()
+        gfe.exportTasksToSheets()
 
 
 
-        
+
+
+
 
 @app.route("/api", methods=["POST"])
-def trigger_function():
-    data = request.get_json()
+def api_endpoint():
+    data = flask.request.get_json()
     threading.Thread(target=accept_request, args=(data,)).start()
     return {"status": "success"}, 200
 
+
+
+
+
+
+
+
+
+def main_loop():
+    while True:
+        try:
+            #gfi.getSolidpixelsData()
+            #gfi.getGmailData()
+
+            gfe.exportTasksToSheets()
+        except Exception as e:
+            print(f"[{datetime.datetime.now()}] Error in main_loop: {e}")
+        time.sleep(updateTime)
+
+def start_process():
+    p = Process(target=main_loop)
+    p.daemon = True
+    p.start()
+
 if __name__ == "__main__":
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        start_process()
     app.run(host="0.0.0.0", port=8080, debug=True)
+
+

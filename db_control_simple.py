@@ -4,6 +4,9 @@ from sqlalchemy.schema import Computed
 import datetime
 from typing import TypedDict, Optional
 
+import app_secrets
+import sys
+
 DATABASE_FILE = 'tasks-temp.db'
 DATABASE_URL = f'sqlite:///{DATABASE_FILE}'
 
@@ -24,6 +27,7 @@ class TaskDict(TypedDict):
     duration: float
     started: Optional[datetime.datetime]
     finished: Optional[datetime.datetime]
+    email_id: Optional[str]
     last_edit_by: str
 
 class ProjectDict(TypedDict):
@@ -203,6 +207,7 @@ def get_taskBySupportID(id):
             return task
         else:
             print(f"Task with support_id {id} not found.")
+            sys.exit(-1)
     finally:
         session.close()
 
@@ -215,6 +220,7 @@ def get_employeeByFullName(full_name):
             return employee.__dict__
         else:
             print(f"Employee with full_name {full_name} not found.")
+            return app_secrets.get("GOOGLE_SUPPORT_EMAIL")
     finally:
         session.close()
 
@@ -226,8 +232,6 @@ def get_employeeByEmail(email):
             return employee.__dict__
         else:
             print(f"Employee with email {email} not found.")
+            return "Error"
     finally:
         session.close()
-
-    
-#print(get_employeeByFullName('Michal Schenk')['email'])

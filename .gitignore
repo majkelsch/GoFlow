@@ -1,3 +1,14 @@
+# GoFlow Reorganization
+api_endpoint.py
+db_control.py
+goflow.db
+gftools.py
+mailing.py
+main2.py
+tasks.db
+test.py
+
+
 # Temporarily ignored
 demofile.json
 goflow.db

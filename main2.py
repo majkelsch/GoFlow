@@ -88,6 +88,7 @@ def getSolidpixelsData():
                     "duration": 0,
                     "started": None,
                     "finished": None,
+                    "email_id": None,
                     "last_edit_by": "GoFlow Importer"
                 }
                 db_control_simple.createTask_DB(newData)
