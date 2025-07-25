@@ -161,7 +161,7 @@ def exportTasksToSheets():
     for x in tasks:
         tasksID.append(x['support_id'])
     tasksID = set(tasksID)
-    existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").get_values(f"A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").row_count}")))
+    existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").row_count}')))
     existingTasksID = set(existingTasksID)
     
 
