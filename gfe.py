@@ -173,7 +173,7 @@ def exportTasksToSheets():
             taskData = db_control_simple.get_taskBySupportID(id)
             time.sleep(2)
             createTask(taskData)
-            result = db_control_simple.get_employeeByEmail(taskData['owner'])
+            result = db_control_simple.get_employeeByFullName(taskData['owner'])
             if isinstance(result, dict):
                 owner_email = result['email']
             else:
