@@ -1,0 +1,15 @@
+{
+    "ignore_emails": [
+        "noreply",
+        "no-reply",
+        "invoice",
+        "info@subreg.cz",
+        "info@tipy.firmy.cz",
+        "info@firmy.cz",
+        "podpora@solidpixels.cz",
+        "mail+solidpixels@fakturoidmail.cz",
+        "mailer@solidpixels.cz",
+        "radek.botos@solidpixels-f07061f67df8.intercom-mail.com",
+        "notification@slack.com"
+    ]
+}

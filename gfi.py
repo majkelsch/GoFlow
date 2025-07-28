@@ -9,6 +9,7 @@ import datetime
 import time
 from googleapiclient.errors import HttpError
 from dateutil import parser as date_parser
+import json
 
 
 
@@ -46,7 +47,7 @@ def getSolidpixelsData():
                     "project": str(row[2]),
                     "title": "SUPPORT FORM",
                     "description": str(row[4]),
-                    "owner": str(app_secrets.get("DEFAULT_SUPPORT_OWNER")),
+                    "employee": str(app_secrets.get("DEFAULT_SUPPORT_OWNER")),
                     "priority": "Low",
                     "status": "Income",
                     "arrived": datetime.datetime.now().replace(microsecond=0),
@@ -73,6 +74,7 @@ def getGmailData():
     """
     Get data from Gmail and insert them to the DB
     """
+
     messages = []
     page_token = None
     while True:
@@ -88,23 +90,23 @@ def getGmailData():
             break
     
     for message in messages:
-        client = "Unknown"
+        sender = "Unknown"
         subject = "No Subject"
         email_id = "No ID"
         try:
             response = gm_mngr.getService().users().messages().get(userId='me', id=message['id'], format='full').execute()
             
             email_id = response['id']
-            if db_control_simple.check_existingMailID(email_id) == False:
+            if db_control_simple.exists_email(email_id) == False:
 
-                description = gm_mngr.extractTextFromPayload(response['payload'])
-                if description == None:
-                    description = "Unknown"
+                content = gm_mngr.extractTextFromPayload(response['payload'])
+                if content == None:
+                    content = "Unknown"
 
                 date = datetime.datetime.now()
                 for i in response['payload']['headers']:
                     if i['name'] == "From":
-                        client = i['value']
+                        sender = i['value']
                     if i['name'] == "Subject":
                         subject = i['value']
                     if i['name'] == "Date":
@@ -115,24 +117,17 @@ def getGmailData():
                             print(f"[{datetime.datetime.now()}] Failed to parse date: {date_str}, error: {e}")
                             date = datetime.datetime.now()
 
-                db_control_simple.createTask_DB({
-                    "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
-                    "client": client,
-                    "project": client,
-                    "title": subject,
-                    "description": description,
-                    "owner": str(app_secrets.get("DEFAULT_SUPPORT_OWNER")),
-                    "priority": "Low",
-                    "status": "Income",
-                    "arrived": date.replace(microsecond=0),
-                    "due": date.replace(microsecond=0) + datetime.timedelta(days=7),
-                    "duration": 0,
-                    "started": None,
-                    "finished": None,
+
+                db_control_simple.insert_email({
                     "email_id": email_id,
-                    "last_edit_by": "GoFlow Importer"
+                    "sender": sender,
+                    "subject": subject,
+                    "content": content,
+                    "date": date.replace(microsecond=0)
                 })
             
         except HttpError as error:
             print(f'[{datetime.datetime.now()}] An error occurred: {error}')
             break
+    
+    db_control_simple.transfer_emailsToTasks()

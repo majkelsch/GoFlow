@@ -16,9 +16,9 @@ def main_loop():
     while True:
         try:
             #gfi.getSolidpixelsData()
-            #gfi.getGmailData()
+            gfi.getGmailData()
 
-            gfe.exportTasksToSheets()
+            #gfe.exportTasksToSheets()
         except Exception as e:
             print(f"[{datetime.datetime.now()}] Error in main_loop: {e}")
         time.sleep(updateTime)

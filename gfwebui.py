@@ -37,7 +37,7 @@ def accept_request(data):
                     "project": data["task_data"].get("project", "Unknown Project"),
                     "title": data["task_data"].get("title", "No Title"),
                     "description": data["task_data"].get("description", "No Description"),
-                    "owner": data["task_data"].get("owner", "No Owner"),
+                    "employee": data["task_data"].get("employee", "No Owner"),
                     "priority": data["task_data"].get("priority", "No Priority"),
                     "status": data["task_data"].get("status", "No Status"),
                     "arrived": datetime.datetime.now().replace(microsecond=0),
@@ -56,11 +56,15 @@ def accept_request(data):
 
 
 
-@app.route("/api", methods=["POST"])
+@app.route("/api", methods=["GET", "POST"])
 def api_endpoint():
-    data = flask.request.get_json()
-    threading.Thread(target=accept_request, args=(data,)).start()
-    return {"status": "success"}, 200
+    if flask.request.method == "POST":
+        data = flask.request.get_json()
+        threading.Thread(target=accept_request, args=(data,)).start()
+        return {"status": "success"}, 200
+    else:  # GET request
+        return {"message": "This is the GET response, baby boy."}, 200
+
 
 
 

@@ -21,7 +21,7 @@ def accept_request(data):
                     "project": data["task_data"].get("project", "Unknown Project"),
                     "title": data["task_data"].get("title", "No Title"),
                     "description": data["task_data"].get("description", "No Description"),
-                    "owner": data["task_data"].get("owner", "No Owner"),
+                    "employee": data["task_data"].get("employee", "No Owner"),
                     "priority": data["task_data"].get("priority", "No Priority"),
                     "status": data["task_data"].get("status", "No Status"),
                     "arrived": datetime.datetime.now().replace(microsecond=0),

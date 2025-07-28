@@ -3,9 +3,11 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.schema import Computed
 import datetime
 from typing import TypedDict, Optional
+from datetime import timedelta
 
 import app_secrets
 import sys
+import json
 
 DATABASE_FILE = 'tasks-temp.db'
 DATABASE_URL = f'sqlite:///{DATABASE_FILE}'
@@ -19,7 +21,7 @@ class TaskDict(TypedDict):
     project: str
     title: str
     description: str
-    owner: str
+    employee: str
     priority: str
     status: str
     arrived: Optional[datetime.datetime]
@@ -39,15 +41,51 @@ class ProjectDict(TypedDict):
     inv_mail: Optional[str]
     ignore: Optional[int]
 
+
+
+class EmailsDict(TypedDict):
+    email_id: str
+    sender: str
+    subject: str
+    date: datetime.datetime
+    content: str
+    task: Optional[int]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Employees(Base):
     __tablename__ = 'employees'
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     full_name = Column(String, Computed(text("first_name || ' ' || last_name"), persisted=True), nullable=False)
     email = Column(String, nullable=False)
     phone = Column(String, nullable=False)
-    position = Column(String, nullable=False)
+    position = Column(String, nullable=False)           # bind to new table
+
+    tasks = relationship('Tasks', back_populates='employee')
+
 
     
     
@@ -57,38 +95,84 @@ class Tasks(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     support_id = Column(String, nullable=False, unique=True)
-    client = Column(String, nullable=False)
-    project = Column(String, nullable=False)
+    client = Column(String, nullable=False)                 # Bind to new table
+    project = Column(String, nullable=False)                # Bind to updated table
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    owner = Column(String, nullable=False)
-    priority = Column(String, nullable=False)
-    status = Column(String, nullable=False)
+
+    employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
+    employee = relationship('Employees', back_populates=('tasks'))
+
+    priority_id = Column(Integer, ForeignKey('priorities.id'), nullable=False)
+    priority = relationship('Priorities', back_populates='tasks')
+
+    status_id = Column(Integer, ForeignKey('statuses.id'), nullable=False)
+    status = relationship('Statuses', back_populates='tasks')
+
+
     arrived = Column(DateTime, nullable=True)
     due = Column(DateTime, nullable=True)
     duration = Column(Float, nullable=True, default=0)
     started = Column(DateTime, nullable=True)
     finished = Column(DateTime, nullable=True)
-    email_id = Column(String, nullable=True)
-    last_edit_by = Column(String, nullable=True)
+
+    email_id = Column(Integer, ForeignKey('emails.id'), nullable=True)
+    email = relationship('Emails', back_populates='task', uselist=False)
+
+    last_edit_by = Column(String, nullable=True)            # Create logging
 
     
 
     def __repr__(self):
         return (f"<Task(id={self.id}, support_id='{self.support_id}', client='{self.client}', "
-                f"project='{self.project}', title='{self.title}', owner='{self.owner}', "
+                f"project='{self.project}', title='{self.title}', employee='{self.employee}', "
                 f"priority='{self.priority}', status='{self.status}', arrived={self.arrived}, "
                 f"duration={self.duration}, started={self.started}, finished={self.finished})>")
     
 
-class Projects(Base):
+
+class Priorities(Base):
+    __tablename__ = 'priorities'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    name = Column(String, nullable=False)
+
+    tasks = relationship('Tasks', back_populates='priority')
+
+class Statuses(Base):
+    __tablename__ = 'statuses'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    name = Column(String, nullable=False)
+
+    tasks = relationship('Tasks', back_populates='status')
+
+
+
+class Emails(Base):
+    __tablename__ = 'emails'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    email_id = Column(String, nullable=False)
+    sender = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    content = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
+
+    task = relationship('Tasks', back_populates='email', uselist=False)
+    
+
+class Projects(Base):   # REVISIT
     __tablename__ = 'projects'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String, nullable=False)
-    status = Column(String, nullable=False)
-    client = Column(String, nullable=False)
-    mobile = Column(String, nullable=True)
+    status = Column(String, nullable=False)             # bind to new table
+    client = Column(String, nullable=False)             
+    mobile = Column(String, nullable=True)              
     mail = Column(String, nullable=True)
     inv_mail = Column(String, nullable=True)
     ignore = Column(Integer, nullable=True, default=0)
@@ -118,7 +202,7 @@ def createTask_DB(data: TaskDict):
             project=data['project'],
             title=data['title'],
             description=data.get('description', ''),
-            owner=data['owner'],
+            employee=data['employee'],
             priority=data['priority'],
             status=data['status'],
             arrived=data.get('arrived', None),
@@ -170,13 +254,7 @@ def get_newTaskID():
         session.close()
 
 
-def check_existingMailID(id):
-    session = db_init()
-    try:
-        exists = session.query(Tasks).filter(Tasks.email_id == id).first()
-        return exists is not None
-    finally:
-        session.close()
+
 
 
 def set_lastEditBy(id):
@@ -236,3 +314,87 @@ def get_employeeByEmail(email):
         print(f"[{datetime.datetime.now()}] Error in db_control_simple.py: {e}")
     finally:
         session.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+########## EMAILS ##########
+
+def insert_email(data: EmailsDict):
+    session = db_init()
+
+    try:
+        newEmail = Emails(
+            email_id = data['email_id'],
+            sender = data['sender'],
+            subject = data['subject'],
+            content = data['content'],
+            date = data['date']
+            
+        )
+        session.add(newEmail)
+        session.commit()
+    except Exception as e:
+        print(f"Error creating email: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def exists_email(id):
+    session = db_init()
+    try:
+        exists = session.query(Emails).filter(Emails.email_id == id).first()
+        return exists is not None
+    finally:
+        session.close()
+
+
+
+def transfer_emailsToTasks():
+    session = db_init()
+    try:
+        with open('config.json', 'r') as configFile:
+            config = json.load(configFile)
+
+        emails = session.query(Emails).filter(Emails.task == None).all()
+        for email in emails:
+            try:
+                for ignore in config['ignore_emails']:
+                    if ignore in email.sender:
+                        raise Exception()
+            except Exception:
+                continue
+            email = email.__dict__
+            createTask_DB({
+                "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(get_newTaskID()).zfill(4)}",
+                "client": email["sender"],
+                "project": email["sender"],
+                "title": email["subject"],
+                "description": email["content"],
+                "employee": "Daniel",
+                "priority": "Low",
+                "status": "Income",
+                "arrived": email["date"],
+                "due": email["date"] + timedelta(days=7),
+                "duration": 0.0,
+                "started": None,
+                "finished": None,
+                "email_id": str(email["id"]),
+                "last_edit_by": "GoFlow Importer"
+            })
+    except Exception as e:
+        print(f"Error transferring: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
