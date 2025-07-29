@@ -7,12 +7,20 @@ import flask
 import threading
 import datetime
 import time
+import json
 
 
 #############
 app = flask.Flask(__name__)
 
 
+def clean(data):
+    """Clean the data by removing unwanted keys."""
+    cleaned_data = []
+    for item in data:
+        cleaned_item = {key: value for key, value in item.items() if key != '_sa_instance_state'}
+        cleaned_data.append(cleaned_item)
+    return cleaned_data
 
 
 
@@ -63,7 +71,15 @@ def api_endpoint():
         threading.Thread(target=accept_request, args=(data,)).start()
         return {"status": "success"}, 200
     else:  # GET request
-        return {"message": "This is the GET response, baby boy."}, 200
+        data = flask.request.get_json()
+        if data.get("command") == "get_clients":
+            out = json.dumps(clean(db_control_simple.get_Clients_DB()), ensure_ascii=False)
+            return {"clients": out}, 200
+        elif data.get("command") == "get_projects":
+            out = json.dumps(clean(db_control_simple.get_Projects_DB()), ensure_ascii=False)
+            return {"projects": out}, 200
+        else:
+            return {"message": f"Invalid request. {data}"}, 200
 
 
 

@@ -1,5 +1,5 @@
+import requests
 import json
 
-with open("config.json", "r") as config_file:
-    config = json.load(config_file)
-    print(config['ignore_emails'])
+response = requests.get('http://127.0.0.1:8080/api', json={"command": "get_projects"})
+print(response.json())

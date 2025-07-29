@@ -72,7 +72,6 @@ class EmailsDict(TypedDict):
 
 
 
-
 class Employees(Base):
     __tablename__ = 'employees'
 
@@ -82,9 +81,43 @@ class Employees(Base):
     full_name = Column(String, Computed(text("first_name || ' ' || last_name"), persisted=True), nullable=False)
     email = Column(String, nullable=False)
     phone = Column(String, nullable=False)
-    position = Column(String, nullable=False)           # bind to new table
+    position_id = Column(Integer, ForeignKey('employeePositions.id'), nullable=False)
+    position = relationship('EmployeePositions', back_populates='employees')
 
     tasks = relationship('Tasks', back_populates='employee')
+
+
+
+class EmployeePositions(Base): # FINE
+    __tablename__ = 'employeePositions'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+
+    employees = relationship('Employees', back_populates='position')
+
+
+
+class Clients(Base):
+    __tablename__ = 'clients'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    full_name = Column(String, Computed(text("first_name || ' ' || last_name"), persisted=True), nullable=False)
+
+
+    emails = relationship("ClientsEmails", back_populates="client", cascade="all, delete-orphan")
+    projects = relationship('Projects', back_populates='client')
+    tasks = relationship("Tasks", back_populates="client")
+
+
+class ClientsEmails(Base): # FINE
+    __tablename__ = 'clientsEmails'
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    email = Column(String)
+    client = relationship("Clients", back_populates="emails")
 
 
     
@@ -95,19 +128,24 @@ class Tasks(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     support_id = Column(String, nullable=False, unique=True)
-    client = Column(String, nullable=False)                 # Bind to new table
-    project = Column(String, nullable=False)                # Bind to updated table
+
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+    client = relationship('Clients', back_populates='tasks')
+
+    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
+    project = relationship('Projects', back_populates='tasks')
+
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
 
     employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
     employee = relationship('Employees', back_populates=('tasks'))
 
-    priority_id = Column(Integer, ForeignKey('priorities.id'), nullable=False)
-    priority = relationship('Priorities', back_populates='tasks')
+    priority_id = Column(Integer, ForeignKey('taskPriorities.id'), nullable=False)
+    priority = relationship('TaskPriorities', back_populates='tasks')
 
-    status_id = Column(Integer, ForeignKey('statuses.id'), nullable=False)
-    status = relationship('Statuses', back_populates='tasks')
+    status_id = Column(Integer, ForeignKey('taskStatuses.id'), nullable=False)
+    status = relationship('TaskStatuses', back_populates='tasks')
 
 
     arrived = Column(DateTime, nullable=True)
@@ -119,8 +157,6 @@ class Tasks(Base):
     email_id = Column(Integer, ForeignKey('emails.id'), nullable=True)
     email = relationship('Emails', back_populates='task', uselist=False)
 
-    last_edit_by = Column(String, nullable=True)            # Create logging
-
     
 
     def __repr__(self):
@@ -131,8 +167,8 @@ class Tasks(Base):
     
 
 
-class Priorities(Base):
-    __tablename__ = 'priorities'
+class TaskPriorities(Base): # FINE
+    __tablename__ = 'taskPriorities'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -140,8 +176,10 @@ class Priorities(Base):
 
     tasks = relationship('Tasks', back_populates='priority')
 
-class Statuses(Base):
-    __tablename__ = 'statuses'
+
+
+class TaskStatuses(Base): # FINE
+    __tablename__ = 'taskStatuses'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -151,7 +189,8 @@ class Statuses(Base):
 
 
 
-class Emails(Base):
+
+class Emails(Base): # FINE
     __tablename__ = 'emails'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -163,25 +202,35 @@ class Emails(Base):
     date = Column(DateTime, nullable=False)
 
     task = relationship('Tasks', back_populates='email', uselist=False)
+
+class ProjectsStatuses(Base): # FINE
+    __tablename__ = 'projectsStatuses'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+
+    projects = relationship('Projects', back_populates='status')
+
     
 
-class Projects(Base):   # REVISIT
+class Projects(Base): # REVISIT
     __tablename__ = 'projects'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String, nullable=False)
-    status = Column(String, nullable=False)             # bind to new table
-    client = Column(String, nullable=False)             
-    mobile = Column(String, nullable=True)              
-    mail = Column(String, nullable=True)
-    inv_mail = Column(String, nullable=True)
-    ignore = Column(Integer, nullable=True, default=0)
 
-    def __repr__(self):
-        return (f"<Project(id={self.id}, url='{self.url}', status='{self.status}', "
-                f"client='{self.client}', mobile='{self.mobile}', mail='{self.mail}', "
-                f"inv_mail='{self.inv_mail}', ignore={self.ignore})>")
+    status_id = Column(Integer, ForeignKey('projectsStatuses.id'), nullable=False)
+    status = relationship('ProjectsStatuses', back_populates='projects')
 
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+    client = relationship('Clients', back_populates='projects')
+
+    tasks = relationship('Tasks', back_populates='project')
+
+    
+
+
+##########
 
 Base.metadata.create_all(engine)
 
@@ -317,6 +366,35 @@ def get_employeeByEmail(email):
 
 
 
+
+
+
+
+
+
+def get_Clients_DB():
+    session = db_init()
+    try:
+        clients = session.query(Clients).all()
+        return [client.__dict__ for client in clients]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_Clients_DB: {e}")
+        return []
+    finally:
+        session.close()
+
+
+
+def get_Projects_DB():
+    session = db_init()
+    try:
+        projects = session.query(Projects).all()
+        return [project.__dict__ for project in projects]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_Projects_DB: {e}")
+        return []
+    finally:
+        session.close()
 
 
 
