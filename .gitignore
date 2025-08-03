@@ -1,12 +1,17 @@
+# Cache files
+gfcache/*
+
 # GoFlow Reorganization
 api_endpoint.py
 db_control.py
-goflow.db
-gftools.py
+_db_control.py
+_goflow.db
+__task-temp.db
 mailing.py
 main2.py
 tasks.db
 test.py
+dbinit.json
 
 
 # Temporarily ignored
@@ -16,6 +21,7 @@ tasks-temp.db
 _tasks-temp.db
 tasks.db
 token.pickle
+_token.pickle
 
 
 # Deprecated files

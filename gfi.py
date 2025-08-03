@@ -1,5 +1,5 @@
 # Custom libraries
-import db_control_simple
+import gfdb
 import app_secrets
 import gs_mngr
 import gm_mngr
@@ -37,32 +37,36 @@ def getSolidpixelsData():
         support_data.pop(0)
         print(support_data)
 
+        clientEmails = gfdb.get_all_client_emails()
+        clientEmailsList = []
+        for record in clientEmails:
+            clientEmailsList.append(record['email'])
+
+
+
         rowIndex = 2
         for row in support_data:
+            print(row)
             # Change to row[8] when put to production
-            if row[9] != 'TRUE':
-                newData: db_control_simple.TaskDict = {
-                    "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(db_control_simple.get_newTaskID()).zfill(4)}",
-                    "client": str(row[0]),
-                    "project": str(row[2]),
+            if row[9] != 'TRUE' and row[1].lower() in clientEmailsList:
+                gfdb.insert_task({
+                    "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(gfdb.get_newTaskID()).zfill(4)}",
+                    "client": gfdb.get_client(full_name=row[0])['id'],
+                    "project": gfdb.get_project(client_id=gfdb.get_client(full_name=row[0])['id'])['id'],
                     "title": "SUPPORT FORM",
                     "description": str(row[4]),
-                    "employee": str(app_secrets.get("DEFAULT_SUPPORT_OWNER")),
-                    "priority": "Low",
-                    "status": "Income",
+                    "employee": gfdb.get_employee(full_name=app_secrets.get("DEFAULT_SUPPORT_OWNER"))['id'],
+                    "priority": gfdb.get_task_priority(name="Low")['id'],
+                    "status": gfdb.get_task_status(name="Income")['id'],
                     "arrived": datetime.datetime.now().replace(microsecond=0),
                     "due": datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7),
-                    "duration": 0,
-                    "started": None,
-                    "finished": None,
-                    "email_id": None,
-                    "last_edit_by": "GoFlow Importer"
-                }
-                db_control_simple.createTask_DB(newData)
+                    "hidden": False,
+                    "duration": 0
+                })
                 time.sleep(1)
                 # Change to sheet_Solidpixels.update_cell(rowIndex, 9, True) when put to production
                 gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").update_cell(rowIndex, 10, True)
-                rowIndex += 1
+            rowIndex += 1
 
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in getSolidpixelsData: {e}")
@@ -97,7 +101,7 @@ def getGmailData():
             response = gm_mngr.getService().users().messages().get(userId='me', id=message['id'], format='full').execute()
             
             email_id = response['id']
-            if db_control_simple.exists_email(email_id) == False:
+            if gfdb.exists_email(email_id) == False:
 
                 content = gm_mngr.extractTextFromPayload(response['payload'])
                 if content == None:
@@ -118,7 +122,7 @@ def getGmailData():
                             date = datetime.datetime.now()
 
 
-                db_control_simple.insert_email({
+                gfdb.insert_email({
                     "email_id": email_id,
                     "sender": sender,
                     "subject": subject,
@@ -130,4 +134,5 @@ def getGmailData():
             print(f'[{datetime.datetime.now()}] An error occurred: {error}')
             break
     
-    db_control_simple.transfer_emailsToTasks()
+    gfdb.transfer_emailsToTasks()
+

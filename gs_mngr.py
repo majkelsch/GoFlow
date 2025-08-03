@@ -40,7 +40,6 @@ sheet_service = build('sheets', 'v4', credentials=SHEET_CREDS)
 
 
 
-
 ############################
 
 def getService():

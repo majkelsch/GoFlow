@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Announcement</h2>
+        <p>Brzy (v průběhu tohoto dne) proběhne velká aktualizace GoFlow a náslené opravy chyb.
+            <br>Aktualizace proběhne v těchto etapách.<br>(Seznam bude průběžně aktualizován. Jednou za čas prosím aktualizujte stránku. Nebo jděte do menu GoFlow > [EXP] > Announcement)
+        </p>
+        <h3>Etapy:</h3>
+        <div class="progress">
+            <ul>
+                <li class="current">
+                    Finální úpravy v backendu<br>
+                    <small>Tabulka bude stále funkční a lze ji používat ve standardním režimu.</small>
+                </li>
+                <li class="">
+                    Přenos všech dat z tabulky do interní databáze.<br>
+                    <small>V danou chvíli prosím o minimální úpravy v tabulce. A když už je změna nutná, prosím o vyznačení provedené změny podbarvením.</small>
+                </li>
+                <li>
+                    Aktualizace systému na serverech<br>
+                    <small>Celý systém bude určitou dobu <b>zcela nefunkční</b>. Prosím o strpení, může to chvíli trvat.</small>
+                </li>
+                <li>
+                    Tzv. Velká synchronizace<br>
+                    <small>Na určitou chvíli se veškerá data z tabulky smažou, chvíli poté se tabulka začne znovu naplňovat ztracenými daty. V tuto chvíli prosím o nezasahování do tabulky.</small>
+                </li>
+                <li>
+                    Finální testování a ukončení operace<br>
+                    <small>Proběhnou malé testy funkčnosti a seřízení všech nastavení.</small>
+                </li>
+            </ul>
+        </div>
+
+        <p>Díky za trpělivost, Michal.</p>
+        <img width="200px" style="margin: auto" src="https://drive.google.com/thumbnail?id=1Y42niL-xuHjJigyC0vuJ48RTJf0hFGug&sz=w1000">
+
+
+    </div>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+        body {
+            font-family: Roboto;
+        }
+        
+        div.container {
+            display: flex;
+            flex-direction: column;
+            width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        div.progress {
+            width: 400px;
+            margin: auto;
+        }
+        
+        div.buttons {
+            margin: 30px 0;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-evenly;
+            align-items: flex-start;
+        }
+        
+        div.buttons div {
+            width: 50%;
+        }
+        
+        li {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        li.done {
+            color: green;
+        }
+        
+        li.current {
+            color: orange;
+        }
+        
+        li.current::marker {
+            animation: scale-up-center 1s ease-in-out infinite alternate both;
+        }
+        
+        input[type="button"] {
+            border: none;
+            padding: 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        
+        input[type="button"].primary {
+            background-color: #006ee6;
+            color: white;
+        }
+        
+        input[type="button"].secondary {
+            background-color: #1b1b1e;
+            color: white;
+        }
+        
+        @keyframes scale-up-center {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(3);
+            }
+        }
+    </style>
+</body>
+
+</html>

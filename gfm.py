@@ -1,5 +1,5 @@
 # Custom Libs
-import db_control_simple
+
 
 # Libs
 import os
@@ -104,11 +104,11 @@ def generateTaskEmail(html_file_path, data):
                                                 </tr>
                                                 <tr>
                                                     <th>Client:</th>
-                                                    <td>{data['client']}</td>
+                                                    <td>{data['client_id']}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Priority:</th>
-                                                    <td>{data['priority']}</td>
+                                                    <td>{data['priority_id']}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Due Date:</th>
@@ -116,4 +116,11 @@ def generateTaskEmail(html_file_path, data):
                                                 </tr>
                                             </table>""")
         # I can't stress enough how much I hate 'str(type(data['due'])) != "<class 'NoneType'>"' I want to change it to something more normal but I have no idea how, at least now.
+    return html_body
+
+
+def generateTaskFinishedEmail(html_file_path, task_id):
+    with open(html_file_path, 'r', encoding='utf-8') as file:
+        html_body = file.read().replace('{{data}}', 
+                                        f"""<p>Váš požadavek vedený pod identifikátorem {task_id} jsme právě vyřídili. Prosíme Vás o kontrolu.</p>""")
     return html_body

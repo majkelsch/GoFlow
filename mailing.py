@@ -93,8 +93,8 @@ def generateTaskEmail(html_file_path, data):
                                             </table>""")
     return html_body
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
     #send_email(service, "michal@cloudbusiness.cz", "Test Email", "This is a test email sent via Gmail API and OAuth2.")
-    send_html_email(db_control_simple.get_employeeByFullName(db_control_simple.get_taskBySupportID("SUP250008")["owner"])["email"], "Test HTML", generateTaskEmail('email_templates/task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250008")))
+    #send_html_email(db_control_simple.get_employee(full_name=db_control_simple.get_taskBySupportID("SUP250008")["owner"])["email"], "Test HTML", generateTaskEmail('email_templates/task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250008")))
     #print(generateTaskEmail('task-listed-employee.html', db_control_simple.get_taskBySupportID("SUP250001")))
 

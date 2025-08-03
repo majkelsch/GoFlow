@@ -1,8 +1,9 @@
 # Custom Lib
 import gs_mngr
 import app_secrets
-import db_control_simple
+import gfdb
 import gfm
+import gftools
 
 # Libs
 import itertools
@@ -59,12 +60,12 @@ def createTask(data):
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "stringValue": data['client']
+                                        "stringValue": gfdb.get_client(id=data['client_id'])['full_name']
                                     }
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "stringValue": data['project']
+                                        "stringValue": gfdb.get_project(id=data['project_id'])['url']
                                     }
                                 },
                                 {
@@ -74,17 +75,17 @@ def createTask(data):
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "stringValue": data['owner'] or app_secrets.get("DEFAULT_SUPPORT_OWNER")
+                                        "stringValue": gfdb.get_employee(id=data['employee_id'])['full_name'] or app_secrets.get("DEFAULT_SUPPORT_OWNER")
                                     }
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "stringValue": data['priority']
+                                        "stringValue": gfdb.get_task_priority(id=data['priority_id'])['name']
                                     }
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "stringValue": data['status']
+                                        "stringValue": gfdb.get_task_status(id=data['status_id'])['name']
                                     }
                                 },
                                 {
@@ -99,12 +100,12 @@ def createTask(data):
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "numberValue": data['duration']
+                                        "numberValue": data['duration']/60
                                     }
                                 },
                                 {
                                     "userEnteredValue": {
-                                        "numberValue": 0
+                                        "numberValue": data['duration']/60/60*1000
                                     }
                                 },
                                 {
@@ -155,27 +156,165 @@ def createTask(data):
         body=body
     ).execute()
 
-def exportTasksToSheets():
-    tasks = db_control_simple.get_allTasks()
+
+
+def getMissingTasks():
+    tasks = gfdb.get_tasks()
+
     if len(tasks) != 0:
         tasksID = []
-        for x in tasks:
-            tasksID.append(x['support_id'])
+        for task in tasks:
+            tasksID.append(task['support_id'])
+
         tasksID = set(tasksID)
         existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").row_count}')))
         existingTasksID = set(existingTasksID)
         
-
         difference = tasksID.symmetric_difference(existingTasksID)
-
         pendingTasks = sorted(list(difference))
-        for id in pendingTasks:
-            taskData = db_control_simple.get_taskBySupportID(id)
-            time.sleep(2)
-            createTask(taskData)
-            result = db_control_simple.get_employeeByFullName(taskData['owner'])
-            if isinstance(result, dict):
-                owner_email = result['email']
-            else:
-                owner_email = app_secrets.get("GOOGLE_SUPPORT_EMAIL")
-            gfm.send_html_email(owner_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
+
+        finalList = []
+        for task_id in pendingTasks:
+            if gfdb.get_task(support_id=task_id)['hidden'] == False:
+                finalList.append(task_id)
+
+        return list(finalList)
+    else:
+        return []
+
+
+
+def exportTasksToSheets():
+    gftools.create_flag("gs_sync", "syncing")
+    pendingTasks = getMissingTasks()
+
+    index = 0
+    while index < len(pendingTasks):
+        id = pendingTasks[index]
+
+        if gftools.get_flag("gs_sync_recalculate") == "recalculate":
+            pendingTasks = getMissingTasks()
+            gftools.clear_flag("gs_sync_recalculate")
+            index = 0
+            continue
+        else:
+            taskData = gfdb.get_task(support_id=id)
+            if taskData:
+                time.sleep(2)
+                createTask(taskData)
+
+                employee = gfdb.get_employee(id=taskData['employee_id'])
+                employee_email = employee['email']
+                with open('config.json', 'r') as configFile:
+                    config = json.load(configFile)
+                if config['sendEmployeeMails'] == True:
+                    gfm.send_html_email(employee_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
+    gftools.clear_flag("gs_sync")
+
+
+def update_task(id):
+    response = gs_mngr.getService().spreadsheets().values().get(
+        spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
+        range='EXP!A:A').execute()
+    result = list(itertools.chain(*response['values']))
+
+    row_id = result.index(id)
+
+    task = gfdb.get_task(support_id=id)
+    if task:
+
+        body = {
+            "requests": [
+                {
+                    "updateCells": {
+                        "rows": [
+                            {
+                                "values": [
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": task['support_id']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_client(id=task['client_id'])['full_name']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_project(id=task['project_id'])['url']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": task['title']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_employee(id=task['employee_id'])['full_name'] or app_secrets.get("DEFAULT_SUPPORT_OWNER")
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_task_priority(id=task['priority_id'])['name']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_task_status(id=task['status_id'])['name']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(task['arrived'] if task['arrived'] is not None else "")
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(task['due'] if task['due'] is not None else "")
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "numberValue": task['duration']/60
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "numberValue": task['duration']/60/60*1000
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(task['started'] if task['started'] is not None else "")
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(task['finished'] if task['finished'] is not None else "")
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": task['description'][:5000]
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "fields": "*",
+                        "start": {
+                            "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").id,
+                            "rowIndex": row_id,
+                            "columnIndex": 0
+                        }
+                    }
+                }
+            ]
+        }
+
+        response = gs_mngr.getService().spreadsheets().batchUpdate(
+            spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
+            body=body
+        ).execute()

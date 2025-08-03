@@ -1,291 +1,37 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Date, Float, func, text
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Mapped, mapped_column
-from sqlalchemy.schema import Computed
-import datetime
-from typing import TypedDict, Optional
-from datetime import timedelta
+from db.gfmodels import *
+from db.gfsessions import session, db_init
+from db.gflog import attach_logger, DBChangeLog, Base
+from db.gfdict import *
 
 import app_secrets
-import sys
+
+
 import json
 
 
 
-import db.gflog as gflog
 
-DATABASE_FILE = 'tasks-temp.db'
-DATABASE_URL = f'sqlite:///{DATABASE_FILE}'
+attach_logger(Clients, session)
+attach_logger(ClientsEmails, session)
+attach_logger(Emails, session)
+attach_logger(EmployeePositions, session)
+attach_logger(Employees, session)
+attach_logger(Projects, session)
+attach_logger(ProjectsStatuses, session)
+attach_logger(TaskPriorities, session)
+attach_logger(Tasks, session)
+attach_logger(TaskPriorities, session)
+attach_logger(Timetrackers, session)
 
-engine = create_engine(DATABASE_URL)
-Base = declarative_base()
+# Create all tables including the log
+Base.metadata.create_all(bind=session.get_bind())
 
-class TaskDict(TypedDict):
-    support_id: str
-    client: str
-    project: str
-    title: str
-    description: str
-    employee: str
-    priority: str
-    status: str
-    arrived: Optional[datetime.datetime]
-    due: Optional[datetime.datetime]
-    duration: float
-    started: Optional[datetime.datetime]
-    finished: Optional[datetime.datetime]
-    email_id: Optional[str]
 
-class ProjectDict(TypedDict):
-    url: str
-    status: str
-    client: str
-    mobile: Optional[str]
-    mail: Optional[str]
-    inv_mail: Optional[str]
-    ignore: Optional[int]
 
 
-
-class EmailsDict(TypedDict):
-    email_id: str
-    sender: str
-    subject: str
-    date: datetime.datetime
-    content: str
-    task: Optional[int]
-
-class EmployeeDict(TypedDict):
-    first_name: str
-    last_name: str
-    email: str
-    phone: str
-    position: str
-
-########## Timetracker ##########
-
-class Timetrackers(Base):
-    __tablename__ = 'timetrackers'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
-    task = relationship('Tasks', back_populates='timetrackers')
-
-    employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
-    employee = relationship('Employees', back_populates='timetrackers')
-
-    start = Column(DateTime, nullable=True)
-    end: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
-    duration = Column(Float, nullable=True)
-
-
-
-
-
-########## Employees ##########
-
-class Employees(Base):
-    __tablename__ = 'employees'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
-    full_name = Column(String, Computed(text("first_name || ' ' || last_name"), persisted=True), nullable=False)
-    email = Column(String, nullable=False)
-    phone = Column(String, nullable=False)
-
-    position_id = Column(Integer, ForeignKey('employeePositions.id'), nullable=False)
-    position = relationship('EmployeePositions', back_populates='employees')
-
-    tasks = relationship('Tasks', back_populates='employee')
-    timetrackers = relationship('Timetrackers', back_populates='employee')
-
-
-
-class EmployeePositions(Base): # FINE
-    __tablename__ = 'employeePositions'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-
-    employees = relationship('Employees', back_populates='position')
-
-
-########## Clients ##########
-
-class Clients(Base):
-    __tablename__ = 'clients'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
-    full_name = Column(String, Computed(text("first_name || ' ' || last_name"), persisted=True), nullable=False)
-
-
-    emails = relationship("ClientsEmails", back_populates="client", cascade="all, delete-orphan")
-    projects = relationship('Projects', back_populates='client')
-    tasks = relationship("Tasks", back_populates="client")
-
-
-class ClientsEmails(Base): # FINE
-    __tablename__ = 'clientsEmails'
-    id = Column(Integer, primary_key=True)
-    client_id = Column(Integer, ForeignKey('clients.id'))
-    email = Column(String)
-    client = relationship("Clients", back_populates="emails")
-
-
-    
-########## TASKS ##########
-
-class Tasks(Base):
-    __tablename__ = 'tasks'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    support_id = Column(String, nullable=False, unique=True)
-
-    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
-    client = relationship('Clients', back_populates='tasks')
-
-    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
-    project = relationship('Projects', back_populates='tasks')
-
-    title = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-
-    employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
-    employee = relationship('Employees', back_populates=('tasks'))
-
-    priority_id = Column(Integer, ForeignKey('taskPriorities.id'), nullable=False)
-    priority = relationship('TaskPriorities', back_populates='tasks')
-
-    status_id = Column(Integer, ForeignKey('taskStatuses.id'), nullable=False)
-    status = relationship('TaskStatuses', back_populates='tasks')
-
-    # Another status but to determine whether to hide the task from view or not and other
-
-
-    arrived = Column(DateTime, nullable=True)
-    due = Column(DateTime, nullable=True)
-    duration = Column(Float, nullable=True, default=0) # Calculate after change
-    started = Column(DateTime, nullable=True)
-    finished = Column(DateTime, nullable=True)
-
-    email_id = Column(Integer, ForeignKey('emails.id'), nullable=True)
-    email = relationship('Emails', back_populates='task', uselist=False)
-
-    timetrackers = relationship('Timetrackers', back_populates='task')
-
-    
-
-    def __repr__(self):
-        return (f"<Task(id={self.id}, support_id='{self.support_id}', client='{self.client}', "
-                f"project='{self.project}', title='{self.title}', employee='{self.employee}', "
-                f"priority='{self.priority}', status='{self.status}', arrived={self.arrived}, "
-                f"duration={self.duration}, started={self.started}, finished={self.finished})>")
-    
-
-
-class TaskPriorities(Base): # FINE
-    __tablename__ = 'taskPriorities'
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    name = Column(String, nullable=False)
-
-    tasks = relationship('Tasks', back_populates='priority')
-
-
-
-class TaskStatuses(Base): # FINE
-    __tablename__ = 'taskStatuses'
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    name = Column(String, nullable=False)
-
-    tasks = relationship('Tasks', back_populates='status')
-
-
-########## EMAILS ##########
-
-class Emails(Base): # FINE
-    __tablename__ = 'emails'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    email_id = Column(String, nullable=False)
-    sender = Column(String, nullable=False)
-    subject = Column(String, nullable=False)
-    content = Column(String, nullable=False)
-    date = Column(DateTime, nullable=False)
-
-    task = relationship('Tasks', back_populates='email', uselist=False)
-
-
-########## PROJECTS ##########
-
-class ProjectsStatuses(Base): # FINE
-    __tablename__ = 'projectsStatuses'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-
-    projects = relationship('Projects', back_populates='status')
-
-    
-
-class Projects(Base): # REVISIT
-    __tablename__ = 'projects'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    url = Column(String, nullable=False)
-
-    status_id = Column(Integer, ForeignKey('projectsStatuses.id'), nullable=False)
-    status = relationship('ProjectsStatuses', back_populates='projects')
-
-    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
-    client = relationship('Clients', back_populates='projects')
-
-    tasks = relationship('Tasks', back_populates='project')
-
-    
 
 
 ##########
-def db_init():
-    DATABASE_FILE = 'tasks-temp.db'
-    DATABASE_URL = f'sqlite:///{DATABASE_FILE}'
-    engine = create_engine(DATABASE_URL)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    return session
-
-
-
-gflog.attach_logger(Clients, db_init())
-gflog.attach_logger(ClientsEmails, db_init())
-gflog.attach_logger(Emails, db_init())
-gflog.attach_logger(EmployeePositions, db_init())
-gflog.attach_logger(Employees, db_init())
-gflog.attach_logger(Projects, db_init())
-gflog.attach_logger(ProjectsStatuses, db_init())
-gflog.attach_logger(TaskPriorities, db_init())
-gflog.attach_logger(Tasks, db_init())
-gflog.attach_logger(TaskPriorities, db_init())
-gflog.attach_logger(Timetrackers, db_init())
-
-
-
-
-
-
-
-
-
-Base.metadata.create_all(engine)
-
-
 
 def populate_db_on_init():
     session = db_init()
@@ -329,10 +75,14 @@ def populate_db_on_init():
 
 def get_timetrack(identifiers: dict):
     session = db_init()
+
     try:
         filters = [getattr(Timetrackers, k) == v for k, v in identifiers.items()]
         timetrack = session.query(Timetrackers).filter(*filters).first()
-        return timetrack.__dict__
+        if timetrack:
+            return timetrack.to_dict()
+        else:
+            raise Exception(f"Timetrack searched by '{filters}' not found.")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_timetrack: {e}")
         return None
@@ -427,29 +177,11 @@ def sum_task_timetracks(task_id):
 
 
 
-def insert_project(data: ProjectDict):
-    session = db_init()
 
-    try:
-        newProject = Projects(
-            url=data['url'],
-            status=data['status'],
-            client=data['client'],
-            mobile=data.get('mobile', None),
-            mail=data.get('mail', None),
-            inv_mail=data.get('inv_mail', None),
-            ignore=data.get('ignore', 0)
-        )
-        session.add(newProject)
-        session.commit()
-    except Exception as e:
-        print(f"Error creating project: {e}")
-        session.rollback()
-    finally:
-        session.close()
 
 def get_newTaskID():
     session = db_init()
+
     try:
         max_id = session.query(func.max(Tasks.id)).scalar()
         if max_id:
@@ -463,9 +195,10 @@ def get_newTaskID():
 
 def get_tasks():
     session = db_init()
+
     try:
         tasks = session.query(Tasks).all()
-        return [task.__dict__ for task in tasks]
+        return [task.to_dict() for task in tasks]
     finally:
         session.close()
 
@@ -473,68 +206,49 @@ def get_tasks():
 
 def get_task(**kwargs):
     session = db_init()
+
     try:
         task = session.query(Tasks).filter_by(**kwargs).first()
-        return task.__dict__
+        if task:
+            return task.to_dict()
+        else:
+            raise Exception(f"Task searched by '{kwargs}' not found")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task: {e}")
         null = session.query(Tasks).first()
-        return null.__dict__
+        return [null.to_dict()] if null else []
     finally:
         session.close()
 
-
-#def get_employeeByFullName(full_name):
-#    session = db_init()
-#    try:
-#        employee = session.query(Employees).filter(Employees.full_name == full_name).first()
-#        if employee is not None:
-#            return employee.__dict__
-#        else:
-#            print(f"Employee with full_name {full_name} not found.")
-#            return app_secrets.get("GOOGLE_SUPPORT_EMAIL")
-#    finally:
-#        session.close()
-
-#def get_employeeByEmail(email):
-#    session = db_init()
-#    try:
-#        employee = session.query(Employees).filter(Employees.email == email).first()
-#        if employee is not None:
-#            return employee.__dict__
-#        else:
-#            raise ValueError(f"Employee with email {email} not found.")
-#    except Exception as e:
-#        print(f"[{datetime.datetime.now()}] Error in db_control_simple.py: {e}")
-#    finally:
-#        session.close()
-
 ########## TASKS ##########
 
-def insert_task(data: TaskDict):
+def insert_task(data):
     session = db_init()
+    print(data)
 
-    if data['client'].isnumeric():
+    if type(data['client']) == int or data['client'].isnumeric():
+        print("Client is numeric")
         client = session.query(Clients).filter_by(id=data['client']).first()
     else:
-        client = session.query(Clients).filter_by(name=data['client']).first()
+        client = session.query(Clients).filter_by(full_name=data['client']).first()
 
-    if data['project'].isnumeric():
+    if type(data['project']) == int or data['project'].isnumeric():
+        print("Project is numeric")
         project = session.query(Projects).filter_by(id=data['project']).first()
     else:
         project = session.query(Projects).filter_by(name=data['project']).first()
 
-    if data['employee'].isnumeric():
+    if type(data['employee']) == int or data['employee'].isnumeric():
         employee = session.query(Employees).filter_by(id=data['employee']).first()
     else:
-        employee = session.query(Employees).filter_by(name=data['employee']).first()
+        employee = session.query(Employees).filter_by(full_name=data['employee']).first()
 
-    if data['priority'].isnumeric():
+    if type(data['priority']) == int or data['priority'].isnumeric():
         priority = session.query(TaskPriorities).filter_by(id=data['priority']).first()
     else:
         priority = session.query(TaskPriorities).filter_by(name=data['priority']).first()
 
-    if data['status'].isnumeric():
+    if type(data['status']) == int or data['status'].isnumeric():
         status = session.query(TaskStatuses).filter_by(id=data['status']).first()
     else:
         status = session.query(TaskStatuses).filter_by(name=data['status']).first()
@@ -566,49 +280,59 @@ def insert_task(data: TaskDict):
 
 def get_task_priorities():
     session = db_init()
+
     try:
         priorities = session.query(TaskPriorities).all()
-        return [priority.__dict__ for priority in priorities]
+        return [priority.to_dict() for priority in priorities]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task_priorities: {e}")
         null = session.query(TaskPriorities).first()
-        return null.__dict__
+        return [null.to_dict()] if null else []
     finally:
         session.close()
 
-def get_task_priority(**kwargs):
+def get_task_priority(**kwargs) -> dict:
     session = db_init()
+
     try:
         priority = session.query(TaskPriorities).filter_by(**kwargs).first()
-        return priority.__dict__
+        if priority:
+            return priority.to_dict()
+        else:
+            raise Exception(f"Priority searched by '{kwargs}' not found.")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task_priority: {e}")
         null = session.query(TaskPriorities).first()
-        return null.__dict__
+        return null.to_dict() if null else {}
     finally:
         session.close()
 
 def get_task_statuses():
     session = db_init()
+
     try:
         statuses = session.query(TaskStatuses).all()
-        return [status.__dict__ for status in statuses]
+        return [status.to_dict() for status in statuses]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task_statuses: {e}")
         null = session.query(TaskStatuses).first()
-        return [null]
+        return [null.to_dict()] if null else []
     finally:
         session.close()
 
-def get_task_status(**kwargs):
+def get_task_status(**kwargs) -> dict:
     session = db_init()
+
     try:
         status = session.query(TaskStatuses).filter_by(**kwargs).first()
-        return status.__dict__
+        if status:
+            return status.to_dict()
+        else:
+            raise Exception(f"Task status searched by '{kwargs}' not found.")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task_status: {e}")
         null = session.query(TaskStatuses).first()
-        return null.__dict__
+        return null.to_dict() if null else {}
     finally:
         session.close()
 
@@ -623,11 +347,14 @@ def sync_task(identifiers: dict, updates: dict):
             for key, value in updates.items():
                 print(key, value)
                 if key == "employee":
-                    setattr(task, "employee_id", get_employee(full_name=value)["id"])
+                    employee = get_employee(full_name=value)
+                    setattr(task, "employee_id", employee["id"] if isinstance(employee, dict) else employee[0]["id"])
                 elif key == "priority":
-                    setattr(task, "priority_id", get_task_priority(name=value)["id"])
+                    priority = get_task_priority(name=value)
+                    setattr(task, "priority_id", priority["id"] if isinstance(priority, dict) else priority[0]["id"])
                 elif key == "status":
-                    setattr(task, "priority_id", get_task_status(name=value)["id"])
+                    status = get_task_status(name=value)
+                    setattr(task, "status_id", status["id"] if isinstance(status, dict) else status[0]["id"])
                 elif key == "description":
                     setattr(task, key, value)
         else:
@@ -638,60 +365,192 @@ def sync_task(identifiers: dict, updates: dict):
     finally:
         session.commit()
 
+def end_task(**kwargs):
+    session = db_init()
 
+    try:
+        task = session.query(Tasks).filter_by(**kwargs).first()
+        if task:
+            task.hidden = True
+        else:
+            raise Exception(f"Task searched by '{kwargs} not found.")
+
+    except Exception as e:
+        print(f"Error ending task: {e}")
+        session.rollback()
+    finally:
+        session.commit()
 
 
 
 
 ########## CLIENTS ##########
 
-def get_clients():
+def insert_client(data):
     session = db_init()
+
     try:
-        clients = session.query(Clients).all()
-        return [client.__dict__ for client in clients]
+        record = Clients(
+            first_name=data['first_name'],
+            last_name=data['last_name']
+        )
+        session.add(record)
+        session.commit()
+        return record.id
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_Clients_DB: {e}")
-        null = session.query(Clients).first()
-        return [null]
+        print(f"Error creating client: {e}")
+        session.rollback()
+        return 0
     finally:
         session.close()
 
-def get_client(**kwargs):
+
+def insert_client_email(data):
     session = db_init()
+
+    try:
+        record = ClientsEmails(
+            client_id=data['client_id'],
+            email=data['email']
+        )
+        session.add(record)
+        session.commit()
+    except Exception as e:
+        print(f"Error creating client's email: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+
+
+
+
+def get_clients():
+    session = db_init()
+
+    try:
+        clients = session.query(Clients).all()
+        return [client.to_dict() for client in clients]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_Clients_DB: {e}")
+        null = session.query(Clients).first()
+        return [null.to_dict()] if null else []
+    finally:
+        session.close()
+
+def get_client(**kwargs) -> dict:
+    session = db_init()
+
     try:
         client = session.query(Clients).filter_by(**kwargs).first()
-        return client.__dict__
+        if client:
+            return client.to_dict()
+        else:
+            raise Exception(f"Client searched by '{kwargs}' not found.")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_client: {e}")
         null = session.query(Clients).first()
-        return null.__dict__
+        return null.to_dict() if null else {}
+    finally:
+        session.close()
+
+
+
+def get_client_emails(**kwargs) -> list[dict]:
+    session = db_init()
+
+    try:
+        emails = session.query(ClientsEmails).filter_by(**kwargs).all()
+        return [email.to_dict() for email in emails]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_client_emails: {e}")
+        null = session.query(Clients).first()
+        return [null.to_dict()] if null else []
+    finally:
+        session.close()
+
+def get_all_client_emails():
+    session = db_init()
+
+    try:
+        emails = session.query(ClientsEmails).all()
+        return [email.to_dict() for email in emails]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_all_client_emails: {e}")
+        return []
     finally:
         session.close()
 
 ########## PROJECT ##########
 
-def get_projects():
+def insert_project(data: ProjectDict):
     session = db_init()
+
+    if type(data['status']) == int or data['status'].isnumeric():
+        status = session.query(ProjectsStatuses).filter_by(id=data['status']).first()
+    else:
+        status = session.query(ProjectsStatuses).filter_by(name=data['status']).first()
+
+    if type(data['client']) == int or data['client'].isnumeric():
+        client = session.query(Clients).filter_by(id=data['client']).first()
+    else:
+        client = session.query(Clients).filter_by(full_name=data['client']).first()
+
     try:
-        projects = session.query(Projects).all()
-        return [project.__dict__ for project in projects]
+        newProject = Projects(
+            url=data['url'],
+            status=status,
+            client=client
+        )
+        session.add(newProject)
+        session.commit()
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_projects: {e}")
-        null = session.query(Projects).first()
-        return [null.__dict__]
+        print(f"Error creating project: {e}")
+        session.rollback()
     finally:
         session.close()
 
-def get_project(**kwargs):
+def get_projects():
     session = db_init()
+
+    try:
+        projects = session.query(Projects).all()
+        return [project.to_dict() for project in projects]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_projects: {e}")
+        null = session.query(Projects).first()
+        return [null.to_dict()] if null else []
+    finally:
+        session.close()
+
+def get_project(**kwargs) -> dict:
+    session = db_init()
+
     try:
         project = session.query(Projects).filter_by(**kwargs).first()
-        return project.__dict__
+        if project:
+            return project.to_dict()
+        else:
+            raise Exception(f"Project searched by '{kwargs}' not found.")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_project: {e}")
         null = session.query(Projects).first()
-        return null.__dict__
+        return null.to_dict() if null else {}
+    finally:
+        session.close()
+
+
+def get_project_statuses():
+    session = db_init()
+
+    try:
+        statuses = session.query(ProjectsStatuses).all()
+        return [status.to_dict() for status in statuses]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_project_statuses: {e}")
+        null = session.query(Projects).first()
+        return [null.to_dict()] if null else []
     finally:
         session.close()
     
@@ -701,8 +560,9 @@ def get_project(**kwargs):
 
 def insert_employee(data: EmployeeDict):
     session = db_init()
+
     try:
-        if data['position'].isnumeric():
+        if type(data['position']) == int or data['position'].isnumeric():
             position = session.query(EmployeePositions).filter_by(id=data['position']).first()
         else:
             position = session.query(EmployeePositions).filter_by(name=data['position']).first()
@@ -724,6 +584,7 @@ def insert_employee(data: EmployeeDict):
 
 def insert_employeePosition(data):
     session = db_init()
+
     try:
         newEmployeePosition = EmployeePositions(name = data['name'])
         session.add(newEmployeePosition)
@@ -736,9 +597,10 @@ def insert_employeePosition(data):
 
 def get_positions():
     session = db_init()
+
     try:
         positions = session.query(EmployeePositions).all()
-        return [position.__dict__ for position in positions]
+        return [position.to_dict() for position in positions]
     except Exception as e:
         print(f"Error getting positions: {e}")
         null = session.query(EmployeePositions).first()
@@ -748,25 +610,30 @@ def get_positions():
 
 def get_employees():
     session = db_init()
+
     try:
         employees = session.query(Employees).all()
-        return [employee.__dict__ for employee in employees]
+        return [employee.to_dict() for employee in employees]
     except Exception as e:
         print(f"Error getting employees: {e}")
         null = session.query(Employees).first()
-        return [null.__dict__]
+        return [null.to_dict()] if null else []
     finally:
         session.close()
 
-def get_employee(**kwargs):
+def get_employee(**kwargs) -> dict:
     session = db_init()
+
     try:
         employee = session.query(Employees).filter_by(**kwargs).first()
-        return employee.__dict__
+        if employee:
+            return employee.to_dict()
+        else:
+            raise Exception(f"Employee searched by '{kwargs}' not found.")
     except Exception as e:
         print(f"Error getting employee: {e}")
         null = session.query(Employees).first()
-        return null.__dict__
+        return null.to_dict() if null else {}
     finally:
         session.close()
 
@@ -780,7 +647,7 @@ def insert_email(data: EmailsDict):
     try:
         newEmail = Emails(
             email_id = data['email_id'],
-            sender = data['sender'],
+            sender = data['sender'].split('<')[-1].strip('>'),
             subject = data['subject'],
             content = data['content'],
             date = data['date']
@@ -797,6 +664,7 @@ def insert_email(data: EmailsDict):
 
 def exists_email(id):
     session = db_init()
+
     try:
         exists = session.query(Emails).filter(Emails.email_id == id).first()
         return exists is not None
@@ -807,33 +675,39 @@ def exists_email(id):
 
 def transfer_emailsToTasks():
     session = db_init()
+
     try:
         with open('config.json', 'r') as configFile:
             config = json.load(configFile)
+
+
+        clientEmails = get_all_client_emails()
+        clientEmailsList = []
+        for record in clientEmails:
+            clientEmailsList.append(record['email'])
 
         emails = session.query(Emails).filter(Emails.task == None).all()
         for email in emails:
             try:
                 for ignore in config['ignore_emails']:
-                    if ignore in email.sender:
-                        raise Exception()
+                    if ignore in email.sender or email.sender not in clientEmailsList:
+                        raise Exception("Skip")
             except Exception:
                 continue
-            email = email.__dict__
+            email = email.to_dict()
+            print(email)
+            client_id = get_client(id=get_client_emails(email=email["sender"])[0]['client_id'])['id']
             insert_task({
                 "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(get_newTaskID()).zfill(4)}",
-                "client": email["sender"],
-                "project": email["sender"],
+                "client": client_id,
+                "project": get_project(client_id=client_id)['id'],
                 "title": email["subject"],
                 "description": email["content"],
-                "employee": "Daniel",
-                "priority": "Low",
-                "status": "Income",
+                "employee": get_employee(full_name=app_secrets.get("DEFAULT_SUPPORT_OWNER"))['id'],
+                "priority": get_task_priority(name="Low")['id'],
+                "status": get_task_status(name="Income")['id'],
                 "arrived": email["date"],
                 "due": email["date"] + timedelta(days=7),
-                "duration": 0.0,
-                "started": None,
-                "finished": None,
                 "email_id": str(email["id"])
             })
     except Exception as e:
@@ -841,10 +715,3 @@ def transfer_emailsToTasks():
         session.rollback()
     finally:
         session.close()
-
-
-###############################
-
-
-#insert_timetrack({"task_id": 0, "employee_id": 0})
-#set_timetrack({"task_id": 0, "employee_id": get_employee(), "end": None}, {"end" : datetime.datetime.now().replace(microsecond=0)})

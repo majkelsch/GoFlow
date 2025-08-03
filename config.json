@@ -11,5 +11,7 @@
         "mailer@solidpixels.cz",
         "radek.botos@solidpixels-f07061f67df8.intercom-mail.com",
         "notification@slack.com"
-    ]
+    ],
+    "sendClientMails": false,
+    "sendEmployeeMails": false
 }
