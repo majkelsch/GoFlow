@@ -41,7 +41,7 @@ def createTask(data):
             {
                 "insertDimension": {
                     "range": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").id,
+                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
                         "dimension": "ROWS",
                         "startIndex": 1,
                         "endIndex": 2
@@ -129,7 +129,7 @@ def createTask(data):
                     ],
                     "fields": "*",
                     "start": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").id,
+                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
                         "rowIndex": 1,
                         "columnIndex": 0
                     }
@@ -142,7 +142,7 @@ def createTask(data):
                     },
                     "fields": "*",
                     "range": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").id,
+                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
                         "dimension": "ROWS",
                         "startIndex": 1,
                         "endIndex": 2
@@ -168,7 +168,7 @@ def getMissingTasks():
             tasksID.append(task['support_id'])
 
         tasksID = set(tasksID)
-        existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").row_count}')))
+        existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").row_count}')))
         existingTasksID = set(existingTasksID)
         
         difference = tasksID.symmetric_difference(existingTasksID)
@@ -218,7 +218,7 @@ def exportTasksToSheets():
 def update_task(id):
     response = gs_mngr.getService().spreadsheets().values().get(
         spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
-        range='EXP!A:A').execute()
+        range='GoFlow!A:A').execute()
     result = list(itertools.chain(*response['values']))
 
     row_id = result.index(id)
@@ -308,7 +308,7 @@ def update_task(id):
                         ],
                         "fields": "*",
                         "start": {
-                            "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "EXP").id,
+                            "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
                             "rowIndex": row_id,
                             "columnIndex": 0
                         }
