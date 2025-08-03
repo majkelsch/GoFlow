@@ -227,13 +227,11 @@ def insert_task(data):
     print(data)
 
     if type(data['client']) == int or data['client'].isnumeric():
-        print("Client is numeric")
         client = session.query(Clients).filter_by(id=data['client']).first()
     else:
         client = session.query(Clients).filter_by(full_name=data['client']).first()
 
     if type(data['project']) == int or data['project'].isnumeric():
-        print("Project is numeric")
         project = session.query(Projects).filter_by(id=data['project']).first()
     else:
         project = session.query(Projects).filter_by(name=data['project']).first()
@@ -439,13 +437,13 @@ def get_clients():
     finally:
         session.close()
 
-def get_client(**kwargs) -> dict:
+def get_client(**kwargs):
     session = db_init()
 
     try:
         client = session.query(Clients).filter_by(**kwargs).first()
         if client:
-            return client.to_dict()
+            return client.to_dict(include_relationships=True)  # <-- Return dict with relationships if needed
         else:
             raise Exception(f"Client searched by '{kwargs}' not found.")
     except Exception as e:
@@ -492,16 +490,11 @@ def insert_project(data: ProjectDict):
     else:
         status = session.query(ProjectsStatuses).filter_by(name=data['status']).first()
 
-    if type(data['client']) == int or data['client'].isnumeric():
-        client = session.query(Clients).filter_by(id=data['client']).first()
-    else:
-        client = session.query(Clients).filter_by(full_name=data['client']).first()
 
     try:
         newProject = Projects(
             url=data['url'],
-            status=status,
-            client=client
+            status=status
         )
         session.add(newProject)
         session.commit()
@@ -700,7 +693,7 @@ def transfer_emailsToTasks():
             insert_task({
                 "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(get_newTaskID()).zfill(4)}",
                 "client": client_id,
-                "project": get_project(client_id=client_id)['id'],
+                "project": get_client(id=client_id)['projects'][0]['id'],
                 "title": email["subject"],
                 "description": email["content"],
                 "employee": get_employee(full_name=app_secrets.get("DEFAULT_SUPPORT_OWNER"))['id'],
@@ -712,6 +705,30 @@ def transfer_emailsToTasks():
             })
     except Exception as e:
         print(f"Error transferring: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+
+
+def assignProjectToClient(client_id, project_id):
+    session = db_init()
+
+    try:
+        client = session.query(Clients).filter_by(id=int(client_id)).first()
+        project = session.query(Projects).filter_by(id=int(project_id)).first()
+
+        if not client:
+            raise ValueError("Client with id=1 not found")
+        if not project:
+            raise ValueError("Project with id=1 not found")
+
+        client.projects.append(project)
+        session.commit()
+
+    except Exception as e:
+        print(f"Error pairing records: {e}")
         session.rollback()
     finally:
         session.close()

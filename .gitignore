@@ -5,13 +5,19 @@ gfcache/*
 api_endpoint.py
 db_control.py
 _db_control.py
+_gf_db.db
 _goflow.db
 __task-temp.db
+__tasks-temp.db
 mailing.py
 main2.py
 tasks.db
 test.py
 dbinit.json
+db_control_simple.py
+gf_db.db
+mailing.py
+
 
 
 # Temporarily ignored

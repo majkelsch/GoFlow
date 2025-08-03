@@ -6,117 +6,305 @@
 </head>
 
 <body>
-    <div class="container">
-        <h2>Announcement</h2>
-        <p>Brzy (v průběhu tohoto dne) proběhne velká aktualizace GoFlow a náslené opravy chyb.
-            <br>Aktualizace proběhne v těchto etapách.<br>(Seznam bude průběžně aktualizován. Jednou za čas prosím aktualizujte stránku. Nebo jděte do menu GoFlow > [EXP] > Announcement)
-        </p>
-        <h3>Etapy:</h3>
-        <div class="progress">
-            <ul>
-                <li class="current">
-                    Finální úpravy v backendu<br>
-                    <small>Tabulka bude stále funkční a lze ji používat ve standardním režimu.</small>
-                </li>
-                <li class="">
-                    Přenos všech dat z tabulky do interní databáze.<br>
-                    <small>V danou chvíli prosím o minimální úpravy v tabulce. A když už je změna nutná, prosím o vyznačení provedené změny podbarvením.</small>
-                </li>
-                <li>
-                    Aktualizace systému na serverech<br>
-                    <small>Celý systém bude určitou dobu <b>zcela nefunkční</b>. Prosím o strpení, může to chvíli trvat.</small>
-                </li>
-                <li>
-                    Tzv. Velká synchronizace<br>
-                    <small>Na určitou chvíli se veškerá data z tabulky smažou, chvíli poté se tabulka začne znovu naplňovat ztracenými daty. V tuto chvíli prosím o nezasahování do tabulky.</small>
-                </li>
-                <li>
-                    Finální testování a ukončení operace<br>
-                    <small>Proběhnou malé testy funkčnosti a seřízení všech nastavení.</small>
-                </li>
-            </ul>
-        </div>
+    <form id="dataForm">
+        </label>
+        <label>Client:
+            <select name="client" required>
+            </select>
+        </label><br>
 
-        <p>Díky za trpělivost, Michal.</p>
-        <img width="200px" style="margin: auto" src="https://drive.google.com/thumbnail?id=1Y42niL-xuHjJigyC0vuJ48RTJf0hFGug&sz=w1000">
+        <label>Project:
+            <select name="project" required>
+            </select>
+            <input name="getProject" type="button" value="Get project [WIP]" onclick="getProjectFromClient()">
+        </label><br>
 
 
-    </div>
+        <label>Title: <input type="text" name="title" required></label><br>
+        <label>Description:<br>
+        <textarea name="description" rows="4" cols="50"></textarea>
+      </label><br>
+        <label>Employee:
+        <select name="employee" required>
+          
+        </select>
+      </label><br>
+        <label>Priority:
+        <select name="priority" required>
+    
+        </select>
+      </label><br>
+        <label>Status:
+        <select name="status" required>
 
+        </select>
+      </label><br>
+
+        <label>Due date:
+            <input type="date" name="due_date">
+        </label>
+        <input type="submit" value="Create">
+    </form>
+    <script>
+        API_URL = 'http://127.0.0.1:8080/api';
+
+        document.addEventListener("DOMContentLoaded", function(event) {
+            fetch(`${API_URL}?command=getClients`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    populateClients(data)
+                    console.log('Data received:', data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error: ' + error.message);
+                });
+
+            fetch(`${API_URL}?command=getProjects`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    populateProjects(data)
+                    console.log('Data received:', data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error: ' + error.message);
+                });
+
+            fetch(`${API_URL}?command=getEmployees`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    populateEmployees(data)
+                    console.log('Data received:', data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error: ' + error.message);
+                });
+
+            fetch(`${API_URL}?command=getTaskPriorities`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    populatePriorities(data)
+                    console.log('Data received:', data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error: ' + error.message);
+                });
+
+            fetch(`${API_URL}?command=getTaskStatuses`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    populateStatuses(data)
+                    console.log('Data received:', data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error: ' + error.message);
+                });
+
+
+
+
+        });
+
+        function populateClients(clients) {
+            const clientSelect = document.querySelector('select[name="client"]');
+            clients.forEach(client => {
+                if (client.first_name != "Null") {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = client.full_name;
+                    clientSelect.appendChild(option);
+                }
+            });
+        }
+
+        function populateProjects(projects) {
+            const projectSelect = document.querySelector('select[name="project"]');
+            projects.forEach(project => {
+                if (project.url != "Null") {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.url;
+                    projectSelect.appendChild(option);
+                }
+            });
+        }
+
+        function populateEmployees(employees) {
+            const employeeSelect = document.querySelector('select[name="employee"]');
+            employees.forEach(employee => {
+                if (employee.first_name != "Null") {
+                    const option = document.createElement('option');
+                    option.value = employee.id;
+                    option.textContent = employee.full_name;
+                    employeeSelect.appendChild(option);
+                }
+            });
+        }
+
+        function populatePriorities(priorities) {
+            const prioritySelect = document.querySelector('select[name="priority"]');
+            priorities.forEach(priority => {
+                if (priority.name != "Null") {
+                    const option = document.createElement('option');
+                    option.value = priority.id;
+                    option.textContent = priority.name;
+                    prioritySelect.appendChild(option);
+                }
+            });
+        }
+
+        function populateStatuses(statuses) {
+            const statusSelect = document.querySelector('select[name="status"]');
+            statuses.forEach(status => {
+                if (status.name != "Null") {
+                    const option = document.createElement('option');
+                    option.value = status.id;
+                    option.textContent = status.name;
+                    statusSelect.appendChild(option);
+                }
+            });
+        }
+
+        function getProjectFromClient() {
+            const clientSelect = document.querySelector('select[name="client"]');
+            const projectSelect = document.querySelector('select[name="project"]');
+            const clientId = clientSelect.value;
+
+            fetch(`${API_URL}?command=getProjectsByClient&client_id=${clientId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    projectSelect.innerHTML = ''; // Clear existing options
+                    data.forEach(project => {
+                        if (project.url != "Null") {
+                            const option = document.createElement('option');
+                            option.value = project.id;
+                            option.textContent = project.url;
+                            projectSelect.appendChild(option);
+                        }
+                    });
+                    console.log('Projects for client received:', data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error: ' + error.message);
+                });
+        }
+    </script>
+    <script>
+        document.getElementById("dataForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            var data = {
+                client: formData.get("client"),
+                project: formData.get("project"),
+                title: formData.get("title"),
+                description: formData.get("description"),
+                employee: formData.get("employee"),
+                priority: formData.get("priority"),
+                status: formData.get("status"),
+                due_date: formData.get("due_date") || null
+
+            };
+            fetch(`${API_URL}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' // or 'application/x-www-form-urlencoded'
+                    },
+                    body: JSON.stringify({
+                        command: 'insert_task',
+                        task_data: data
+                    })
+                })
+                .then(response => response.json()) // or response.text() if it's plain text
+                .then(data => {
+                    console.log('Success:', data);
+                    google.script.host.close();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: ' + error.message);
+                });
+
+        });
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
         body {
             font-family: Roboto;
         }
         
-        div.container {
+        form {
             display: flex;
             flex-direction: column;
-            width: 600px;
+            width: 300px;
             margin: 0 auto;
             padding: 20px;
             text-align: center;
         }
         
-        div.progress {
-            width: 400px;
-            margin: auto;
-        }
-        
-        div.buttons {
-            margin: 30px 0;
+        form label {
             display: flex;
-            flex-direction: row;
-            flex-wrap: nowrap;
-            justify-content: space-evenly;
-            align-items: flex-start;
+            flex-direction: column;
         }
         
-        div.buttons div {
-            width: 50%;
+        form input,
+        form select,
+        form textarea {
+            font-family: Roboto;
+            font-size: 16px;
+            padding: 5px;
         }
         
-        li {
-            text-align: left;
-            margin-bottom: 20px;
+        form textarea {
+            resize: vertical;
         }
         
-        li.done {
-            color: green;
+        form label {
+            font-family: Roboto;
+            font-size: 16px;
         }
         
-        li.current {
-            color: orange;
-        }
-        
-        li.current::marker {
-            animation: scale-up-center 1s ease-in-out infinite alternate both;
-        }
-        
-        input[type="button"] {
-            border: none;
-            padding: 20px;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        
-        input[type="button"].primary {
+        form input[type="submit"] {
             background-color: #006ee6;
             color: white;
-        }
-        
-        input[type="button"].secondary {
-            background-color: #1b1b1e;
-            color: white;
-        }
-        
-        @keyframes scale-up-center {
-            0% {
-                transform: scale(1);
-            }
-            100% {
-                transform: scale(3);
-            }
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
         }
     </style>
 </body>

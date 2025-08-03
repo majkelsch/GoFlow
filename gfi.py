@@ -35,7 +35,7 @@ def getSolidpixelsData():
     try:
         support_data = gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").get_all_values()
         support_data.pop(0)
-        print(support_data)
+        #print(support_data)
 
         clientEmails = gfdb.get_all_client_emails()
         clientEmailsList = []
@@ -46,13 +46,13 @@ def getSolidpixelsData():
 
         rowIndex = 2
         for row in support_data:
-            print(row)
+            #print(row)
             # Change to row[8] when put to production
-            if row[9] != 'TRUE' and row[1].lower() in clientEmailsList:
+            if row[8] != 'TRUE' and row[1].lower() in clientEmailsList:
                 gfdb.insert_task({
                     "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(gfdb.get_newTaskID()).zfill(4)}",
                     "client": gfdb.get_client(full_name=row[0])['id'],
-                    "project": gfdb.get_project(client_id=gfdb.get_client(full_name=row[0])['id'])['id'],
+                    "project": gfdb.get_project(url=row[2])['id'],
                     "title": "SUPPORT FORM",
                     "description": str(row[4]),
                     "employee": gfdb.get_employee(full_name=app_secrets.get("DEFAULT_SUPPORT_OWNER"))['id'],
@@ -65,7 +65,7 @@ def getSolidpixelsData():
                 })
                 time.sleep(1)
                 # Change to sheet_Solidpixels.update_cell(rowIndex, 9, True) when put to production
-                gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").update_cell(rowIndex, 10, True)
+                gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").update_cell(rowIndex, 9, True)
             rowIndex += 1
 
     except Exception as e:

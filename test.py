@@ -2,7 +2,7 @@ import requests
 import json
 import gfdb
 import gfi
-
+import gfe
 
 ##response = requests.post('http://127.0.0.1:8080/api', json={"command": "insert_timetrack", "data": {"support_id": "SUP250001", "email": "michal@cloudbusiness.cz"}})
 ##response = requests.post('http://127.0.0.1:8080/api', json={"command": "end_timetrack", "data": {"support_id": "SUP250001", "email": "michal@cloudbusiness.cz"}})
@@ -31,7 +31,25 @@ import gfi
 
 
 #gfi.getSolidpixelsData()
-gfdb.transfer_emailsToTasks()
+#gfi.getGmailData()
+#gfdb.transfer_emailsToTasks()
+
+#print(gfdb.get_client(id=1)['projects'][0]['id'])
+
+#
+# 
+gfe.exportTasksToSheets()
 
 
-#print(gfdb.get_client(id=gfdb.get_client_emails(email="kozakova@interieryhk.cz")[0]['client_id']))
+#client_id = gfdb.get_client(id=gfdb.get_client_emails(email="bodylovebrno@email.cz")[0]['client_id'])['id']
+#print(gfdb.get_client(id=client_id)['projects'][0]['id'])
+
+
+
+#print(gfdb.get_project(id=0))
+
+#gfdb.assignProjectToClient(1,1)
+#gfdb.assignProjectToClient(1,2)
+
+
+#print(gfdb.get_client(id=1)['projects'])

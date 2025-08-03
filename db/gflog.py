@@ -49,11 +49,14 @@ def attach_logger(model_class, session, user_getter=lambda: 'system'):
         state = inspect(target)
         if not state.modified:
             return
-        old_data = {
-            attr.key: state.attrs[attr.key].history.deleted[0]
-            for attr in mapper.attrs
-            if state.attrs[attr.key].history.has_changes()
-        }
+
+        old_data = {}
+        for attr in mapper.attrs:
+            hist = state.attrs[attr.key].history
+            if hist.has_changes():
+                # Only include if a deleted (old) value exists
+                old_data[attr.key] = hist.deleted[0] if hist.deleted else None
+
         new_data = serialize_instance(target)
         session._change_log_queue.append(DBChangeLog(
             table_name=target.__tablename__,

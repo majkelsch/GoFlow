@@ -8,6 +8,7 @@ import gftools
 # Libs
 import itertools
 import time
+import json
 
 
 
@@ -187,6 +188,7 @@ def getMissingTasks():
 def exportTasksToSheets():
     gftools.create_flag("gs_sync", "syncing")
     pendingTasks = getMissingTasks()
+    #print(pendingTasks)
 
     index = 0
     while index < len(pendingTasks):
@@ -200,7 +202,7 @@ def exportTasksToSheets():
         else:
             taskData = gfdb.get_task(support_id=id)
             if taskData:
-                time.sleep(2)
+                time.sleep(10)
                 createTask(taskData)
 
                 employee = gfdb.get_employee(id=taskData['employee_id'])
@@ -209,6 +211,7 @@ def exportTasksToSheets():
                     config = json.load(configFile)
                 if config['sendEmployeeMails'] == True:
                     gfm.send_html_email(employee_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
+        index +=1
     gftools.clear_flag("gs_sync")
 
 

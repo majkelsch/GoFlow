@@ -115,6 +115,9 @@ def accept_request(data):
         else:
             gfdb.end_task(support_id=data['data']['task_id'])
 
+    elif data.get("command") == "pairProjectClient":
+        gfdb.assignProjectToClient(data['data']['client'], data['data']['project'])
+
 
 
 
@@ -144,7 +147,8 @@ def api_endpoint():
         elif request.get('command') == 'getProjectStatuses':
             return json.dumps(clean(gfdb.get_project_statuses()))
         elif request.get('command') == 'getProjectsByClient':
-            return json.dumps(clean(gfdb.get_project(id=request.get('client_id'))))
+            return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
+            #return json.dumps(clean(gfdb.get_project(id=request.get('client_id'))))
         else:
             return {"message": f"Invalid request."}, 200
 

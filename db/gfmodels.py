@@ -1,6 +1,6 @@
 from .gflog import Base
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Date, Float, func, text, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Date, Float, func, text, Boolean, Table
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Mapped, mapped_column, DeclarativeMeta
 from sqlalchemy.schema import Computed
 from sqlalchemy.inspection import inspect
@@ -35,6 +35,23 @@ class SerializableMixin:
                     result[rel.key] = value.to_dict(include_relationships=True, max_depth=max_depth, _depth=_depth+1)
 
         return result
+    
+
+
+
+
+
+
+
+
+
+# Association Table
+clients_projects_association = Table(
+    'clients_projects',
+    Base.metadata,
+    Column('client_id', Integer, ForeignKey('clients.id'), primary_key=True),
+    Column('project_id', Integer, ForeignKey('projects.id'), primary_key=True)
+)
 
 
 
@@ -93,8 +110,13 @@ class Clients(Base, SerializableMixin):
 
 
     emails = relationship("ClientsEmails", back_populates="client", cascade="all, delete-orphan")
-    projects = relationship('Projects', back_populates='client')
     tasks = relationship("Tasks", back_populates="client")
+
+    projects = relationship(
+        'Projects',
+        secondary=clients_projects_association,
+        back_populates='clients'
+    )
 
 
 class ClientsEmails(Base, SerializableMixin): # FINE
@@ -208,7 +230,12 @@ class Projects(Base, SerializableMixin): # REVISIT
     status_id = Column(Integer, ForeignKey('projectsStatuses.id'), nullable=False)
     status = relationship('ProjectsStatuses', back_populates='projects')
 
-    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
-    client = relationship('Clients', back_populates='projects')
+    clients = relationship(
+        'Clients',
+        secondary=clients_projects_association,
+        back_populates='projects'
+    )
 
     tasks = relationship('Tasks', back_populates='project')
+
+
