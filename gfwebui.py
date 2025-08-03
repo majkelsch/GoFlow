@@ -146,6 +146,8 @@ def api_endpoint():
             return json.dumps(clean(gfdb.get_task_statuses()))
         elif request.get('command') == 'getProjectStatuses':
             return json.dumps(clean(gfdb.get_project_statuses()))
+        elif request.get('command') == 'getTasks':
+            return json.dumps(clean(gfdb.get_tasks()))
         elif request.get('command') == 'getProjectsByClient':
             return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
             #return json.dumps(clean(gfdb.get_project(id=request.get('client_id'))))
