@@ -63,10 +63,12 @@ def accept_request(data):
                     "finished": None,
                     "email_id": None
                 })
-        
+        print("Created Task")
         if gftools.get_flag("gs_sync") == "syncing":
             gftools.create_flag("gs_sync_recalculate", "recalculate")
+            print("Triggered a recalc")
         else:
+            print("Doing it on my own")
             gfe.exportTasksToSheets()
         
     elif data.get("command") == "insert_employee":
