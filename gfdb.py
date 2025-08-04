@@ -3,6 +3,8 @@ from db.gfsessions import session, db_init
 from db.gflog import attach_logger, DBChangeLog, Base
 from db.gfdict import *
 
+
+import gftools
 import app_secrets
 
 
@@ -262,13 +264,14 @@ def insert_task(data):
             employee=employee,
             priority=priority,
             status=status,
-            arrived=data.get('arrived', None),
-            due=data.get('due', None),
+            arrived=gftools.parse_datetime(data.get('arrived')),
+            due=gftools.parse_datetime(data.get('due')),
             duration=data.get('duration', 0.0),
-            started=data.get('started', None),
-            finished=data.get('finished', None),
-            email_id=data.get('email_id', None)
+            started=gftools.parse_datetime(data.get('started')),
+            finished=gftools.parse_datetime(data.get('finished')),
+            email_id=data.get('email_id')
         )
+
         session.add(record)
         session.commit()
         return record.id

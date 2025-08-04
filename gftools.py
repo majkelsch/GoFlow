@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 
 
@@ -30,6 +31,20 @@ def get_config(name):
             return config
     except Exception as e:
         print("Error with reading the config file.")
+
+
+def parse_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    try:
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        try:
+            return datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            return None
 
 
 
