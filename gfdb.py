@@ -449,7 +449,7 @@ def get_client(**kwargs):
     try:
         client = session.query(Clients).filter_by(**kwargs).first()
         if client:
-            return client.to_dict(include_relationships=True)  # <-- Return dict with relationships if needed
+            return client.to_dict(include_relationships=True)
         else:
             raise Exception(f"Client searched by '{kwargs}' not found.")
     except Exception as e:
@@ -530,7 +530,7 @@ def get_project(**kwargs) -> dict:
     try:
         project = session.query(Projects).filter_by(**kwargs).first()
         if project:
-            return project.to_dict()
+            return project.to_dict(include_relationships=True)
         else:
             raise Exception(f"Project searched by '{kwargs}' not found.")
     except Exception as e:

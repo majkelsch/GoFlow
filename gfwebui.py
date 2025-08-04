@@ -6,6 +6,7 @@ import gfm
 
 # Libs
 import flask
+import requests
 import flask_cors
 import threading
 import datetime
@@ -248,6 +249,7 @@ def api_endpoint():
     else:  # GET request
         request = flask.request.args.to_dict()
         command = request.get('command')
+
         if command == 'getPositions':
             return json.dumps(clean(gfdb.get_positions()))
         elif command == 'getClients':
@@ -266,10 +268,16 @@ def api_endpoint():
             return json.dumps(clean(gfdb.get_tasks()))
         elif command == 'getProjectsByClient':
             return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
+        elif command == 'getClientsByProject':
+            return json.dumps(gfdb.get_project(id=request.get('project_id')))
+        elif command == 'serverStatus':
+            return json.dumps({"api_up": True})
         else:
             return {"message": f"Invalid request."}, 200
 
-
+@app.route("/server-status")
+def server_status():
+    return flask.render_template('server-status.html')
 
 
 if __name__ == "__main__":

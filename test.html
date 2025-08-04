@@ -11,6 +11,7 @@
         <label>Client:
             <select name="client" required>
             </select>
+            <input name="getProject" type="button" value="Get client [WIP]" onclick="getClientFromProject()">
         </label><br>
 
         <label>Project:
@@ -22,23 +23,23 @@
 
         <label>Title: <input type="text" name="title" required></label><br>
         <label>Description:<br>
-        <textarea name="description" rows="4" cols="50"></textarea>
-      </label><br>
+            <textarea name="description" rows="4" cols="50"></textarea>
+        </label><br>
         <label>Employee:
-        <select name="employee" required>
-          
-        </select>
-      </label><br>
-        <label>Priority:
-        <select name="priority" required>
-    
-        </select>
-      </label><br>
-        <label>Status:
-        <select name="status" required>
+            <select name="employee" required>
 
-        </select>
-      </label><br>
+            </select>
+        </label><br>
+        <label>Priority:
+            <select name="priority" required>
+
+            </select>
+        </label><br>
+        <label>Status:
+            <select name="status" required>
+
+            </select>
+        </label><br>
 
         <label>Due date:
             <input type="date" name="due_date">
@@ -46,97 +47,20 @@
         <input type="submit" value="Create">
     </form>
     <script>
-        //API_URL = 'http://127.0.0.1:8080/api';
-
         document.addEventListener("DOMContentLoaded", function(event) {
-            fetch(`${API_URL}?command=getClients`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    populateClients(data)
-                    console.log('Data received:', data);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    alert('Error: ' + error.message);
-                });
-
-            fetch(`${API_URL}?command=getProjects`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    populateProjects(data)
-                    console.log('Data received:', data);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    alert('Error: ' + error.message);
-                });
-
-            fetch(`${API_URL}?command=getEmployees`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    populateEmployees(data)
-                    console.log('Data received:', data);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    alert('Error: ' + error.message);
-                });
-
-            fetch(`${API_URL}?command=getTaskPriorities`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    populatePriorities(data)
-                    console.log('Data received:', data);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    alert('Error: ' + error.message);
-                });
-
-            fetch(`${API_URL}?command=getTaskStatuses`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    populateStatuses(data)
-                    console.log('Data received:', data);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    alert('Error: ' + error.message);
-                });
-
-
+            google.script.run.withSuccessHandler(populateClients).fetchFromServer('getClients');
+            google.script.run.withSuccessHandler(populateProjects).fetchFromServer('getProjects');
+            google.script.run.withSuccessHandler(populateEmployees).fetchFromServer('getEmployees');
+            google.script.run.withSuccessHandler(populatePriorities).fetchFromServer('getTaskPriorities');
+            google.script.run.withSuccessHandler(populateStatuses).fetchFromServer('getTaskStatuses');
 
 
         });
 
-        function populateClients(clients) {
+        function populateClients(data) {
+            console.log("Received:", data);
             const clientSelect = document.querySelector('select[name="client"]');
-            clients.forEach(client => {
+            data.forEach(client => {
                 if (client.first_name != "Null") {
                     const option = document.createElement('option');
                     option.value = client.id;
@@ -194,34 +118,48 @@
             });
         }
 
-        function getProjectFromClient() {
-            const clientSelect = document.querySelector('select[name="client"]');
-            const projectSelect = document.querySelector('select[name="project"]');
-            const clientId = clientSelect.value;
+        function populateProjectsByClient(data) {
 
-            fetch(`${API_URL}?command=getProjectsByClient&client_id=${clientId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    projectSelect.innerHTML = ''; // Clear existing options
-                    data.forEach(project => {
-                        if (project.url != "Null") {
-                            const option = document.createElement('option');
-                            option.value = project.id;
-                            option.textContent = project.url;
-                            projectSelect.appendChild(option);
-                        }
-                    });
-                    console.log('Projects for client received:', data);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    alert('Error: ' + error.message);
-                });
+            const projectSelect = document.querySelector('select[name="project"]');
+
+            projectSelect.innerHTML = ''; // Clear existing options
+            data.forEach(project => {
+                if (project.url != "Null") {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.url;
+                    projectSelect.appendChild(option);
+                }
+            });
+        }
+
+        function populateClientsByProject(data) {
+
+            const clientSelect = document.querySelector('select[name="client"]');
+
+            clientSelect.innerHTML = ''; // Clear existing options
+            data.forEach(client => {
+                if (client.url != "Null") {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = client.full_name;
+                    clientSelect.appendChild(option);
+                }
+            });
+        }
+
+        function getProjectFromClient() {
+
+            const clientSelect = document.querySelector('select[name="client"]');
+            const clientId = clientSelect.value;
+            google.script.run.withSuccessHandler(populateProjectsByClient).fetchFromServer(`getProjectsByClient&client_id=${clientId}`);
+        }
+
+        function getClientFromProject() {
+
+            const projectSelect = document.querySelector('select[name="project"]');
+            const projectId = projectSelect.value;
+            google.script.run.withSuccessHandler(populateClientsByProject).fetchFromServer(`getClientsByProject&project_id=${projectId}`);
         }
     </script>
     <script>
@@ -229,35 +167,21 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             var data = {
-                client: formData.get("client"),
-                project: formData.get("project"),
-                title: formData.get("title"),
-                description: formData.get("description"),
-                employee: formData.get("employee"),
-                priority: formData.get("priority"),
-                status: formData.get("status"),
-                due_date: formData.get("due_date") || null
+                command: "insert_task",
+                data: {
+                    client: formData.get("client"),
+                    project: formData.get("project"),
+                    title: formData.get("title"),
+                    description: formData.get("description"),
+                    employee: formData.get("employee"),
+                    priority: formData.get("priority"),
+                    status: formData.get("status"),
+                    due_date: formData.get("due_date") || null
+                }
 
             };
-            fetch(`${API_URL}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json' // or 'application/x-www-form-urlencoded'
-                    },
-                    body: JSON.stringify({
-                        command: 'insert_task',
-                        task_data: data
-                    })
-                })
-                .then(response => response.json()) // or response.text() if it's plain text
-                .then(data => {
-                    console.log('Success:', data);
-                    google.script.host.close();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error: ' + error.message);
-                });
+            google.script.run.withSuccessHandler().postToServer(data)
+            google.script.host.close();
 
         });
     </script>

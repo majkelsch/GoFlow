@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoFlow | Server Status</title>
+</head>
+
+<body>
+    <div class="container head">
+        <h1>GoFlow Server Status</h1>
+        <p>Sadly not functional yet</p>
+    </div>
+    <div class="container content">
+        <div class="wing">
+            <h2>API</h2>
+            <div id="server-api" class="status-info functional"></div>
+        </div>
+        <div class="wing">
+            <h2>Scripts</h2>
+            <div id="server-scripts" class="status-info functional">
+
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
+
+
+<style>
+    /* CLEAN PLATE */
+    
+     :root {
+        --bg-color-dark: #252525;
+    }
+    
+    body {
+        background-color: var(--bg-color-dark);
+        color: white;
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+    }
+    
+    h1,
+    h2,
+    h3 {
+        margin-inline-start: 0;
+        margin-inline-end: 0;
+        margin-block-start: 0;
+        margin-block-end: 0;
+    }
+    
+    .container {
+        display: flex;
+        width: 100%;
+        box-shadow: inset 0 0 1px #ffffff33;
+    }
+    
+    .wing {
+        display: flex;
+        width: 50%;
+        box-shadow: inset 0 0 1px #ffffff33;
+    }
+</style>
+<style>
+    /* Server Status */
+    
+    div.container.head {
+        height: 30%;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+    
+    div.container.content {
+        height: 70%;
+    }
+    
+    div.container.content .wing {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    div.container.content .wing h2 {
+        margin: 50px;
+    }
+    
+    div.status-info,
+    div.status-info::after {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: block;
+        content: " ";
+    }
+    
+    div.status-info.functional {
+        background-color: green;
+    }
+    
+    div.status-info.functional::after {
+        animation: scale-up-center 1s ease-in-out infinite alternate both;
+        background-color: rgba(0, 128, 0, 0.5);
+    }
+    
+    div.status-info.problems {
+        background-color: orange;
+    }
+    
+    div.status-info.problems::after {
+        background-color: rgba(255, 166, 0, 0.5);
+        transform: scale(1.5);
+    }
+    
+    div.status-info.down {
+        background-color: red;
+        transform: scale(0.5);
+    }
+    
+    @keyframes scale-up-center {
+        0% {
+            transform: scale(1);
+        }
+        100% {
+            transform: scale(1.5);
+        }
+    }
+</style>
