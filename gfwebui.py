@@ -126,17 +126,22 @@ def accept_request(data):
 
 
         return_id = gfdb.end_timetrack(identifiers={"task_id" : gfdb.get_task(support_id=payload["task_id"])['id'], "employee_id" : gfdb.get_employee(email=payload["employee"])['id'], "end": None})
-        if gftools.get_config("advancedDebug"):
-            print(f"├ [1/3] Ended timetrack with id = {return_id}")
+        if return_id is not None:
+            if gftools.get_config("advancedDebug"):
+                print(f"├ [1/3] Ended timetrack with id = {return_id}")
 
-        gfdb.sum_task_timetracks(gfdb.get_task(support_id=payload["task_id"])['id'])
-        if gftools.get_config("advancedDebug"):
-            print(f"├ [2/3] Summed the duration from records")
+            gfdb.sum_task_timetracks(gfdb.get_task(support_id=payload["task_id"])['id'])
+            if gftools.get_config("advancedDebug"):
+                print(f"├ [2/3] Summed the duration from records")
 
-        gfe.update_task(payload["task_id"])
-        if gftools.get_config("advancedDebug"):
-            print(f"└ [3/3] Updated task in Google Sheets")
-            print(f"[END OF API REQUEST]")
+            gfe.update_task(payload["task_id"])
+            if gftools.get_config("advancedDebug"):
+                print(f"└ [3/3] Updated task in Google Sheets")
+                print(f"[END OF API REQUEST]")
+        else:
+            if gftools.get_config("advancedDebug"):
+                print(f"└ [!] Sequence aborted: No timetrackers found")
+                print(f"[END OF API REQUEST]")
 
 
 
