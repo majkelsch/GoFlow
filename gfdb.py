@@ -93,13 +93,14 @@ def insert_timetrack(data):
     session = db_init()
 
     try:
-        newTimetrack = Timetrackers(
+        record = Timetrackers(
             task_id = data['task_id'],
             employee_id = data['employee_id'],
             start = datetime.datetime.now().replace(microsecond=0)
         )
-        session.add(newTimetrack)
+        session.add(record)
         session.commit()
+        return record.id
     except Exception as e:
         print(f"Error creating timetracker: {e}")
         session.rollback()  
@@ -136,6 +137,7 @@ def end_timetrack(identifiers: dict):
             duration = timetrack.end - timetrack.start
             seconds = duration.total_seconds()
             timetrack.duration = seconds
+            return timetrack.id
         else:
             raise Exception("No records found.")
     except Exception as e:
@@ -216,7 +218,7 @@ def get_task(**kwargs):
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task: {e}")
         null = session.query(Tasks).first()
-        return [null.to_dict()] if null else []
+        return null.to_dict() if null else {}
     finally:
         session.close()
 
@@ -224,7 +226,6 @@ def get_task(**kwargs):
 
 def insert_task(data):
     session = db_init()
-    print(data)
 
     if type(data['client']) == int or data['client'].isnumeric():
         client = session.query(Clients).filter_by(id=data['client']).first()
@@ -252,7 +253,7 @@ def insert_task(data):
         status = session.query(TaskStatuses).filter_by(name=data['status']).first()
 
     try:
-        newTask = Tasks(
+        record = Tasks(
             support_id=data['support_id'],
             client=client,
             project=project,
@@ -268,8 +269,9 @@ def insert_task(data):
             finished=data.get('finished', None),
             email_id=data.get('email_id', None)
         )
-        session.add(newTask)
+        session.add(record)
         session.commit()
+        return record.id
     except Exception as e:
         print(f"Error creating task: {e}")
         session.rollback()
@@ -343,7 +345,7 @@ def sync_task(identifiers: dict, updates: dict):
 
         if task:
             for key, value in updates.items():
-                print(key, value)
+
                 if key == "employee":
                     employee = get_employee(full_name=value)
                     setattr(task, "employee_id", employee["id"] if isinstance(employee, dict) else employee[0]["id"])
@@ -413,6 +415,7 @@ def insert_client_email(data):
         )
         session.add(record)
         session.commit()
+        return record.id
     except Exception as e:
         print(f"Error creating client's email: {e}")
         session.rollback()
@@ -492,12 +495,13 @@ def insert_project(data: ProjectDict):
 
 
     try:
-        newProject = Projects(
+        record = Projects(
             url=data['url'],
             status=status
         )
-        session.add(newProject)
+        session.add(record)
         session.commit()
+        return record.id
     except Exception as e:
         print(f"Error creating project: {e}")
         session.rollback()
@@ -560,15 +564,16 @@ def insert_employee(data: EmployeeDict):
         else:
             position = session.query(EmployeePositions).filter_by(name=data['position']).first()
 
-        newEmployee = Employees(
+        record = Employees(
             first_name = data['first_name'],
             last_name = data['last_name'],
             email = data['email'],
             phone = data['phone'].replace(" ", ""),
             position = position
         )
-        session.add(newEmployee)
+        session.add(record)
         session.commit()
+        return record.id
     except Exception as e:
         print(f"Error creating employee record: {e}")
         session.rollback()
@@ -688,7 +693,7 @@ def transfer_emailsToTasks():
             except Exception:
                 continue
             email = email.to_dict()
-            print(email)
+
             client_id = get_client(id=get_client_emails(email=email["sender"])[0]['client_id'])['id']
             insert_task({
                 "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(get_newTaskID()).zfill(4)}",
@@ -726,6 +731,7 @@ def assignProjectToClient(client_id, project_id):
 
         client.projects.append(project)
         session.commit()
+        
 
     except Exception as e:
         print(f"Error pairing records: {e}")

@@ -13,5 +13,6 @@
         "notification@slack.com"
     ],
     "sendClientMails": false,
-    "sendEmployeeMails": false
+    "sendEmployeeMails": false,
+    "advancedDebug": true
 }

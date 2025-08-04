@@ -1,4 +1,4 @@
-
+import json
 
 
 
@@ -20,5 +20,16 @@ def clear_flag(name):
             f.write("")
     except FileNotFoundError:
         print(f"Error: Flag {name} not found.")
+
+
+
+def get_config(name):
+    try:
+        with open("config.json", "r") as f:
+            config = json.load(f)[name]
+            return config
+    except Exception as e:
+        print("Error with reading the config file.")
+
 
 

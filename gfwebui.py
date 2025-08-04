@@ -45,80 +45,188 @@ def clean(data):
 
 
 
+
 def accept_request(data):
-    if data.get("command") == "insert_task":
-        gfdb.insert_task({
+    command = data.get("command")
+    payload = data.get("data")
+
+    if gftools.get_config("advancedDebug"):
+        print(f"[API REQUEST RECEIVED - POST] Command: {command} | Data: {payload}")
+
+    if command == "insert_task":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Inserting to DB")
+        return_id = gfdb.insert_task({
                     "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(gfdb.get_newTaskID()).zfill(4)}",
-                    "client": data["task_data"].get("client", "Unknown Client"),
-                    "project": data["task_data"].get("project", "Unknown Project"),
-                    "title": data["task_data"].get("title", "No Title"),
-                    "description": data["task_data"].get("description", "No Description"),
-                    "employee": data["task_data"].get("employee", "No Owner"),
-                    "priority": data["task_data"].get("priority", "No Priority"),
-                    "status": data["task_data"].get("status", "No Status"),
+                    "client": payload["client"],
+                    "project": payload["project"],
+                    "title": payload["title"],
+                    "description": payload["description"],
+                    "employee": payload["employee"],
+                    "priority": payload["priority"],
+                    "status": payload["status"],
                     "arrived": datetime.datetime.now().replace(microsecond=0),
-                    "due": datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7),
-                    "duration": 0,
-                    "started": None,
-                    "finished": None,
-                    "email_id": None
+                    "due": payload["due_date"] if payload["due_date"] else datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7)
                 })
-        print("Created Task")
+        if gftools.get_config("advancedDebug"):
+            print(f"└ Inserted data into DB with id = {return_id}")
+
         if gftools.get_flag("gs_sync") == "syncing":
             gftools.create_flag("gs_sync_recalculate", "recalculate")
-            print("Triggered a recalc")
+            if gftools.get_config("advancedDebug"):
+                print(f"[!] Triggered a recalculate flag event")
         else:
-            print("Doing it on my own")
+            if gftools.get_config("advancedDebug"):
+                print(f"Exporting data to Google Sheets.")
             gfe.exportTasksToSheets()
+            if gftools.get_config("advancedDebug"):
+                print(f"[END OF API REQUEST]")
         
-    elif data.get("command") == "insert_employee":
-        gfdb.insert_employee({
-            "first_name": data["employee_data"].get("first_name"),
-            "last_name": data["employee_data"].get("last_name"),
-            "email": data["employee_data"].get("email"),
-            "phone": data["employee_data"].get("phone"),
-            "position": data["employee_data"].get("position")
-        })
 
-    elif data.get("command") == "insert_timetrack":
-        gfdb.insert_timetrack({
-            "task_id": gfdb.get_task(support_id=data["data"].get("support_id")).get('id'),
-            "employee_id": gfdb.get_employee(email=data["data"].get("email")).get('id')
-        })
-    elif data.get("command") == "end_timetrack":
-        gfdb.end_timetrack(identifiers={"task_id" : gfdb.get_task(support_id=data["data"].get("support_id")).get('id'), "employee_id" : gfdb.get_employee(email=data["data"].get("email")).get('id'), "end": None})
-        gfdb.sum_task_timetracks(gfdb.get_task(support_id=data["data"].get("support_id")).get('id'))
-        gfe.update_task(data["data"].get("support_id"))
 
-    elif data.get("command") == "update_task":
+
+
+
+
+    elif command == "insert_employee":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Inserting to DB")
+        return_id = gfdb.insert_employee({
+            "first_name": payload["first_name"],
+            "last_name": payload["last_name"],
+            "email": payload["email"],
+            "phone": payload["phone"],
+            "position": payload["position"]
+        })
+        if gftools.get_config("advancedDebug"):
+            print(f"└ Inserted data into DB with id = {return_id}")
+            print(f"[END OF API REQUEST]")
+
+
+
+
+
+
+    elif command == "insert_timetrack":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Inserting to DB")
+        return_id = gfdb.insert_timetrack({
+            "task_id": gfdb.get_task(support_id=payload["support_id"])['id'],
+            "employee_id": gfdb.get_employee(email=payload["email"])['id']
+        })
+        if gftools.get_config("advancedDebug"):
+            print(f"└ Inserted data into DB with id = {return_id}")
+            print(f"[END OF API REQUEST]")
+
+
+
+    elif command == "end_timetrack":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Initiating sequence")
+
+
+        return_id = gfdb.end_timetrack(identifiers={"task_id" : gfdb.get_task(support_id=payload["support_id"])['id'], "employee_id" : gfdb.get_employee(email=payload["email"])['id'], "end": None})
+        if gftools.get_config("advancedDebug"):
+            print(f"├ [1/3] Ended timetrack with id = {return_id}")
+
+        gfdb.sum_task_timetracks(gfdb.get_task(support_id=payload["support_id"])['id'])
+        if gftools.get_config("advancedDebug"):
+            print(f"├ [2/3] Summed the duration from records")
+
+        gfe.update_task(payload["support_id"])
+        if gftools.get_config("advancedDebug"):
+            print(f"└ [3/3] Updated task in Google Sheets")
+            print(f"[END OF API REQUEST]")
+
+
+
+
+
+    elif command == "update_task":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Updating DB records")
         gfdb.sync_task(
-            identifiers=data["data"]["identifiers"],
-            updates=data["data"]["updates"]
+            identifiers=payload["identifiers"],
+            updates=payload["updates"]
             )
+        if gftools.get_config("advancedDebug"):
+            print(f"└ DB records updated")
+            print(f"[END OF API REQUEST]")
         
-    elif data.get("command") == "insert_client":
-        newClientId = gfdb.insert_client(data['data'])
-        gfdb.insert_client_email({"client_id": newClientId, "email": data['data']['email']})
 
-    elif data.get("command") == "insert_project":
-        gfdb.insert_project(data['data'])
 
-    elif data.get("command") == "end_task":
-        if data['data']['sendAutoMail'] == True:
-            task = gfdb.get_task(support_id=data['data']['task_id'])
+
+    elif command == "insert_client":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Inserting to DB")
+        return_id = gfdb.insert_client(payload)
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Inserted data into DB with id = {return_id}")
+        return_id = gfdb.insert_client_email({"client_id": return_id, "email": payload['email']})
+        if gftools.get_config("advancedDebug"):
+            print(f"└ Paired client-email relationship with id = {return_id}")
+            print(f"[END OF API REQUEST]")
+
+
+
+
+
+
+    elif command == "insert_project":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Inserting to DB")
+        return_id = gfdb.insert_project(payload)
+        if gftools.get_config("advancedDebug"):
+            print(f"└ Inserted data into DB with id = {return_id}")
+            print(f"[END OF API REQUEST]")
+
+
+
+
+
+
+    elif command == "end_task":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Initiating sequence")
+
+        if payload['sendAutoMail'] == True:
+            if gftools.get_config("advancedDebug"):
+                print(f"[!] Sending automail")
+
+            task = gfdb.get_task(support_id=payload['task_id'])
+            if gftools.get_config("advancedDebug"):
+                print(f"├ [1/4] Found related task with id = {task['id']}")
             client = gfdb.get_client(id=task['client_id'])
+            if gftools.get_config("advancedDebug"):
+                print(f"├ [2/4] Found related client with id = {client['id']}")
             mails = gfdb.get_client_emails(client_id=client['id'])
+            if gftools.get_config("advancedDebug"):
+                print(f"├ [3/4] Found related client's emails with ids = {[mail['id'] for mail in mails]}")
             mail=mails[0]['email']
-            with open('config.json', 'r') as configFile:
-                config = json.load(configFile)
-            if config['sendClientMails'] == True:
-                gfm.send_html_email(mail, f"Požadavek {data['data']['task_id']} vyřízen.", gfm.generateTaskFinishedEmail('email_templates/task-finished-client.html', data['data']['task_id']))
-            gfdb.end_task(support_id=data['data']['task_id'])
+            if gftools.get_config("advancedDebug"):
+                print(f"├ [WARNING] Multiple emails results in the first record being chosen as the primary one.")
+
+            if gftools.get_config("sendClientMails"):
+                gfm.send_html_email(mail, f"Požadavek {payload['task_id']} vyřízen.", gfm.generateTaskFinishedEmail('email_templates/task-finished-client.html', payload['task_id']))
+                if gftools.get_config("advancedDebug"):
+                    print(f"└ [4/4] Sending email")
+            gfdb.end_task(support_id=payload['task_id'])
         else:
-            gfdb.end_task(support_id=data['data']['task_id'])
+            if gftools.get_config("advancedDebug"):
+                print(f"[!] Only ending task")
+            gfdb.end_task(support_id=payload['task_id'])
+        if gftools.get_config("advancedDebug"):
+            print(f"[END OF API REQUEST]")
+
+
 
     elif data.get("command") == "pairProjectClient":
+        if gftools.get_config("advancedDebug"):
+            print(f"├ Identified command - Pairing records")
         gfdb.assignProjectToClient(data['data']['client'], data['data']['project'])
+        if gftools.get_config("advancedDebug"):
+            print(f"└ Records paired")
+            print(f"[END OF API REQUEST]")
 
 
 
@@ -134,25 +242,25 @@ def api_endpoint():
         return {"status": "success"}, 200
     else:  # GET request
         request = flask.request.args.to_dict()
-        if request.get('command') == 'getPositions':
+        command = request.get('command')
+        if command == 'getPositions':
             return json.dumps(clean(gfdb.get_positions()))
-        elif request.get('command') == 'getClients':
+        elif command == 'getClients':
             return json.dumps(clean(gfdb.get_clients()))
-        elif request.get('command') == 'getProjects':
+        elif command == 'getProjects':
             return json.dumps(clean(gfdb.get_projects()))
-        elif request.get('command') == 'getEmployees':
+        elif command == 'getEmployees':
             return json.dumps(clean(gfdb.get_employees()))
-        elif request.get('command') == 'getTaskPriorities':
+        elif command == 'getTaskPriorities':
             return json.dumps(clean(gfdb.get_task_priorities()))
-        elif request.get('command') == 'getTaskStatuses':
+        elif command == 'getTaskStatuses':
             return json.dumps(clean(gfdb.get_task_statuses()))
-        elif request.get('command') == 'getProjectStatuses':
+        elif command == 'getProjectStatuses':
             return json.dumps(clean(gfdb.get_project_statuses()))
-        elif request.get('command') == 'getTasks':
+        elif command == 'getTasks':
             return json.dumps(clean(gfdb.get_tasks()))
-        elif request.get('command') == 'getProjectsByClient':
+        elif command == 'getProjectsByClient':
             return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
-            #return json.dumps(clean(gfdb.get_project(id=request.get('client_id'))))
         else:
             return {"message": f"Invalid request."}, 200
 

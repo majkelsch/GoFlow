@@ -35,7 +35,7 @@ def getSolidpixelsData():
     try:
         support_data = gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").get_all_values()
         support_data.pop(0)
-        #print(support_data)
+
 
         clientEmails = gfdb.get_all_client_emails()
         clientEmailsList = []
@@ -46,8 +46,8 @@ def getSolidpixelsData():
 
         rowIndex = 2
         for row in support_data:
-            #print(row)
-            # Change to row[8] when put to production
+
+
             if row[8] != 'TRUE' and row[1].lower() in clientEmailsList:
                 gfdb.insert_task({
                     "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(gfdb.get_newTaskID()).zfill(4)}",
@@ -63,8 +63,7 @@ def getSolidpixelsData():
                     "hidden": False,
                     "duration": 0
                 })
-                time.sleep(1)
-                # Change to sheet_Solidpixels.update_cell(rowIndex, 9, True) when put to production
+                time.sleep(5)
                 gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").update_cell(rowIndex, 9, True)
             rowIndex += 1
 

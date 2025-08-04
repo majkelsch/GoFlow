@@ -156,6 +156,8 @@ def createTask(data):
         spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
         body=body
     ).execute()
+    if gftools.get_config("advancedDebug"):
+        print(f"[API REQUEST SENT - POST] Response: {response}")
 
 
 
@@ -188,30 +190,39 @@ def getMissingTasks():
 def exportTasksToSheets():
     gftools.create_flag("gs_sync", "syncing")
     pendingTasks = getMissingTasks()
-    #print(pendingTasks)
 
-    index = 0
-    while index < len(pendingTasks):
-        id = pendingTasks[index]
+    if gftools.get_config("advancedDebug"):
+        print(f"[GFE: Pending tasks: {len(pendingTasks)}]")
 
-        if gftools.get_flag("gs_sync_recalculate") == "recalculate":
-            pendingTasks = getMissingTasks()
-            gftools.clear_flag("gs_sync_recalculate")
-            index = 0
-            continue
-        else:
-            taskData = gfdb.get_task(support_id=id)
-            if taskData:
-                time.sleep(10)
-                createTask(taskData)
+    if len(pendingTasks) > 0:
+        index = 0
+        while index < len(pendingTasks):
+            id = pendingTasks[index]
 
-                employee = gfdb.get_employee(id=taskData['employee_id'])
-                employee_email = employee['email']
-                with open('config.json', 'r') as configFile:
-                    config = json.load(configFile)
-                if config['sendEmployeeMails'] == True:
-                    gfm.send_html_email(employee_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
-        index +=1
+            if gftools.get_flag("gs_sync_recalculate") == "recalculate":
+                if gftools.get_config("advancedDebug"):
+                    print(f"[!] Caught a recalculate flag")
+                pendingTasks = getMissingTasks()
+                gftools.clear_flag("gs_sync_recalculate")
+                index = 0
+                continue
+            else:
+                taskData = gfdb.get_task(support_id=id)
+                if taskData:
+                    time.sleep(10)
+                    createTask(taskData)
+
+                    employee = gfdb.get_employee(id=taskData['employee_id'])
+                    employee_email = employee['email']
+
+                    if gftools.get_config("sendEmployeeMails"):
+                        gfm.send_html_email(employee_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
+
+                    if gftools.get_config("advancedDebug"):
+                        print(f"[GFE: Export progress: {index}/{len(pendingTasks)}]")
+            index +=1
+        if gftools.get_config("advancedDebug"):
+            print(f"[GFE: Export finished.]")
     gftools.clear_flag("gs_sync")
 
 
@@ -321,3 +332,5 @@ def update_task(id):
             spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
             body=body
         ).execute()
+        if gftools.get_config("advancedDebug"):
+            print(f"[API REQUEST SENT - POST] Response: {response}")
