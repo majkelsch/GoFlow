@@ -125,15 +125,15 @@ def accept_request(data):
             print(f"├ Identified command - Initiating sequence")
 
 
-        return_id = gfdb.end_timetrack(identifiers={"task_id" : gfdb.get_task(support_id=payload["support_id"])['id'], "employee_id" : gfdb.get_employee(email=payload["email"])['id'], "end": None})
+        return_id = gfdb.end_timetrack(identifiers={"task_id" : gfdb.get_task(support_id=payload["task_id"])['id'], "employee_id" : gfdb.get_employee(email=payload["employee"])['id'], "end": None})
         if gftools.get_config("advancedDebug"):
             print(f"├ [1/3] Ended timetrack with id = {return_id}")
 
-        gfdb.sum_task_timetracks(gfdb.get_task(support_id=payload["support_id"])['id'])
+        gfdb.sum_task_timetracks(gfdb.get_task(support_id=payload["task_id"])['id'])
         if gftools.get_config("advancedDebug"):
             print(f"├ [2/3] Summed the duration from records")
 
-        gfe.update_task(payload["support_id"])
+        gfe.update_task(payload["task_id"])
         if gftools.get_config("advancedDebug"):
             print(f"└ [3/3] Updated task in Google Sheets")
             print(f"[END OF API REQUEST]")
