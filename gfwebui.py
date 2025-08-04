@@ -111,8 +111,8 @@ def accept_request(data):
         if gftools.get_config("advancedDebug"):
             print(f"├ Identified command - Inserting to DB")
         return_id = gfdb.insert_timetrack({
-            "task_id": gfdb.get_task(support_id=payload["support_id"])['id'],
-            "employee_id": gfdb.get_employee(email=payload["email"])['id']
+            "task_id": gfdb.get_task(support_id=payload["task_id"])['id'],
+            "employee_id": gfdb.get_employee(email=payload["employee"])['id']
         })
         if gftools.get_config("advancedDebug"):
             print(f"└ Inserted data into DB with id = {return_id}")
