@@ -68,10 +68,34 @@ def wait_for_flag(flag_name:str, signal:str, update_time:int, action, max_retrie
                 print(f"No Collision Signal found.")
             action()
         else:
+            if debug:
+                print(f"No Collision Signal found.")
             action()
     except Exception as e:
         print(f"Error: wait_for_flag {e}")
 
+
+
+
+def detect_collision_flag(flag_name:str, flag_signal:str, update_time:int, action, max_retries: typing.Optional[int] | None, debug:bool = False):
+    if get_flag(flag_name) == flag_signal:
+        tries = 0
+        while get_flag(flag_name) == flag_signal:
+            if max_retries:
+                if tries > max_retries:
+                    raise Exception(f"Reached max_retries: {max_retries}")
+                else:
+                    tries += 1
+            if debug:
+                print(f"Collision Signal found, retrying in {update_time}s")
+            time.sleep(update_time)
+        if debug:
+            print(f"No Collision Signal found")
+        action()
+    else:
+        if debug:
+            print(f"No Collision Signal found.")
+        action()
 
 ########## Configs ##########
 

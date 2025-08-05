@@ -220,7 +220,7 @@ def accept_request(data):
             if gftools.get_config("advancedDebug"):
                 print(f"[!] Only ending task")
         gfdb.end_task(support_id=payload['task_id'])
-        gftools.wait_for_flag("gs_sync", "syncing", 5, lambda: gfe.end_task(support_id=payload['task_id']), max_retries=50, debug=True)
+        gftools.detect_collision_flag("gs_sync", "syncing", 5, lambda: gfe.end_task(support_id=payload['task_id']), max_retries=50, debug=True)
 
         if gftools.get_config("advancedDebug"):
             print(f"[END OF API REQUEST]")

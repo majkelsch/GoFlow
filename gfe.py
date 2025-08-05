@@ -171,11 +171,8 @@ def getMissingTasks():
             tasksID.append(task['support_id'])
 
         tasksID = set(tasksID)
-        if gftools.get_config("advancedDebug"):
-            print(f"[DEBUG] Request existing tasks {datetime.datetime.now()}")
+
         existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").row_count}')))
-        if gftools.get_config("advancedDebug"):
-            print(f"[DEBUG] Received existing tasks {datetime.datetime.now()}")
         existingTasksID = set(existingTasksID)
         
         difference = tasksID.symmetric_difference(existingTasksID)
