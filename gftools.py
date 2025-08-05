@@ -9,6 +9,8 @@ import typing
 def create_flag(name, signal):
     with open(f"gfcache/{name}.txt", "w") as f:
         f.write(signal)
+    if get_config("advancedDebug"):
+            print(f"[CREATED FLAG]")
 
 
 def get_flag(flag_name):
@@ -22,6 +24,8 @@ def clear_flag(flag_name):
     try:
         with open(f"gfcache/{flag_name}.txt", "w") as f:
             f.write("")
+        if get_config("advancedDebug"):
+            print(f"[CLEARED FLAG]")
     except FileNotFoundError:
         print(f"Error: Flag {flag_name} not found.")
 
@@ -58,10 +62,10 @@ def wait_for_flag(flag_name:str, signal:str, update_time:int, action, max_retrie
                     else:
                         tries += 1
                 if debug:
-                    print(f"No signal found, retrying in {update_time}s")
+                    print(f"Collision Signal found, retrying in {update_time}s")
                 time.sleep(update_time)
             if debug:
-                print(f"No signal found, retrying in {update_time}s")
+                print(f"No Collision Signal found.")
             action()
         else:
             action()
