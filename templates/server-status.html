@@ -15,14 +15,26 @@
     <div class="container content">
         <div class="wing">
             <h2>API</h2>
+            {% if api_status == "functional" %}
             <div id="server-api" class="status-info functional"></div>
+            {% elif api_status == "problems" %}
+            <div id="server-api" class="status-info problems"></div>
+            {% else %}
+            <div id="server-api" class="status-info down"></div>
+            {% endif %}
         </div>
         <div class="wing">
             <h2>Scripts</h2>
-            <div id="server-scripts" class="status-info functional">
+            {% if scripts_status == "functional" %}
+            <div id="server-scripts" class="status-info functional"></div>
+            {% elif scripts_status == "problems" %}
+            <div id="server-scripts" class="status-info problems"></div>
+            {% else %}
+            <div id="server-scripts" class="status-info down"></div>
+            {% endif %}
 
-            </div>
         </div>
+    </div>
     </div>
 
 </body>

@@ -269,15 +269,16 @@ def api_endpoint():
         elif command == 'getProjectsByClient':
             return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
         elif command == 'getClientsByProject':
-            return json.dumps(gfdb.get_project(id=request.get('project_id')))
+            return json.dumps(gfdb.get_project(id=request.get('project_id'))['clients'])
         elif command == 'serverStatus':
             return json.dumps({"api_up": True})
         else:
             return {"message": f"Invalid request."}, 200
 
+
 @app.route("/server-status")
 def server_status():
-    return flask.render_template('server-status.html')
+    return flask.render_template('server-status.html', api_status="functional", scripts_status="down")
 
 
 if __name__ == "__main__":
