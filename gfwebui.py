@@ -216,11 +216,12 @@ def accept_request(data):
                 gfm.send_html_email(mail, f"Požadavek {payload['task_id']} vyřízen.", gfm.generateTaskFinishedEmail('email_templates/task-finished-client.html', payload['task_id']))
                 if gftools.get_config("advancedDebug"):
                     print(f"└ [4/4] Sending email")
-            gfdb.end_task(support_id=payload['task_id'])
         else:
             if gftools.get_config("advancedDebug"):
                 print(f"[!] Only ending task")
-            gfdb.end_task(support_id=payload['task_id'])
+        gfdb.end_task(support_id=payload['task_id'])
+        gftools.wait_for_flag("gs_sync", "syncing", 5, lambda: gfe.end_task(support_id=payload['task_id']))
+
         if gftools.get_config("advancedDebug"):
             print(f"[END OF API REQUEST]")
 
@@ -265,7 +266,7 @@ def api_endpoint():
         elif command == 'getProjectStatuses':
             return json.dumps(clean(gfdb.get_project_statuses()))
         elif command == 'getTasks':
-            return json.dumps(clean(gfdb.get_tasks()))
+            return json.dumps(clean(gfdb.get_tasks()), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getProjectsByClient':
             return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
         elif command == 'getClientsByProject':

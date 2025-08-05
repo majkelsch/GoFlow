@@ -226,15 +226,15 @@ def exportTasksToSheets():
     gftools.clear_flag("gs_sync")
 
 
-def update_task(id):
+def update_task(support_id):
     response = gs_mngr.getService().spreadsheets().values().get(
         spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
         range='GoFlow!A:A').execute()
     result = list(itertools.chain(*response['values']))
 
-    row_id = result.index(id)
+    row_id = result.index(support_id)
 
-    task = gfdb.get_task(support_id=id)
+    task = gfdb.get_task(support_id=support_id)
     if task:
 
         body = {
@@ -334,3 +334,33 @@ def update_task(id):
         ).execute()
         if gftools.get_config("advancedDebug"):
             print(f"[API REQUEST SENT - POST] Response: {response}")
+
+
+def end_task(support_id):
+    response = gs_mngr.getService().spreadsheets().values().get(
+        spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
+        range='GoFlow!A:A').execute()
+    result = list(itertools.chain(*response['values']))
+    row_id = result.index(support_id)
+
+    body = {
+        "requests": [
+            {
+                "deleteDimension": {
+                    "range": {
+                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
+                        "dimension": "ROWS",
+                        "startIndex": row_id,
+                        "endIndex": row_id + 1
+                    }
+                }
+            }
+        ]
+    }
+
+    response = gs_mngr.getService().spreadsheets().batchUpdate(
+        spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
+        body=body
+    ).execute()
+    if gftools.get_config("advancedDebug"):
+        print(f"[API REQUEST SENT - POST] Response: {response}")

@@ -7,6 +7,7 @@
 
 <body>
     <form id="dataForm">
+        <input name="reset" type="button" value="Reload" onclick="reloadClientsProjects()">
         </label>
         <label>Client:
             <select name="client" required>
@@ -160,6 +161,11 @@
             const projectSelect = document.querySelector('select[name="project"]');
             const projectId = projectSelect.value;
             google.script.run.withSuccessHandler(populateClientsByProject).fetchFromServer(`getClientsByProject&project_id=${projectId}`);
+        }
+
+        function reloadClientsProjects() {
+            google.script.run.withSuccessHandler(populateClients).fetchFromServer('getClients');
+            google.script.run.withSuccessHandler(populateProjects).fetchFromServer('getProjects');
         }
     </script>
     <script>

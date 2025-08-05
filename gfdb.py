@@ -67,12 +67,6 @@ def populate_db_on_init():
 
     session.commit()
 
-#populate_db_on_init()
-
-
-
-
-
 ########## Timetracker ##########
 
 def get_timetrack(identifiers: dict):
@@ -202,7 +196,7 @@ def get_tasks():
 
     try:
         tasks = session.query(Tasks).all()
-        return [task.to_dict() for task in tasks]
+        return [task.to_dict(include_relationships=True) for task in tasks]
     finally:
         session.close()
 
@@ -224,7 +218,7 @@ def get_task(**kwargs):
     finally:
         session.close()
 
-########## TASKS ##########
+########## Tasks ##########
 
 def insert_task(data):
     session = db_init()

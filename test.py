@@ -3,6 +3,7 @@ import json
 import gfdb
 import gfi
 import gfe
+import gftools
 
 ##response = requests.post('http://127.0.0.1:8080/api', json={"command": "insert_timetrack", "data": {"support_id": "SUP250001", "email": "michal@cloudbusiness.cz"}})
 ##response = requests.post('http://127.0.0.1:8080/api', json={"command": "end_timetrack", "data": {"support_id": "SUP250001", "email": "michal@cloudbusiness.cz"}})
@@ -38,7 +39,7 @@ import gfe
 
 #
 # 
-gfe.exportTasksToSheets()
+#gfe.exportTasksToSheets()
 
 
 #client_id = gfdb.get_client(id=gfdb.get_client_emails(email="bodylovebrno@email.cz")[0]['client_id'])['id']
@@ -53,3 +54,7 @@ gfe.exportTasksToSheets()
 
 
 #print(gfdb.get_client(id=1)['projects'])
+
+
+
+gftools.wait_for_flag("gs_sync", "syncing", 5, lambda: gfe.end_task(support_id="SUP250001"), max_retries=5, debug=True)
