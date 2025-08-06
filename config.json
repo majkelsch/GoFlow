@@ -14,5 +14,6 @@
     ],
     "sendClientMails": false,
     "sendEmployeeMails": false,
-    "advancedDebug": true
+    "advancedDebug": true,
+    "updateTime": 180
 }

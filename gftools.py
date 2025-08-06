@@ -102,13 +102,13 @@ def detect_collision_flag(flag_name:str, flag_signal:str, update_time:int, actio
 
 ########## Configs ##########
 
-def get_config(name):
+def get_config(name:str):
     try:
         with open("config.json", "r") as f:
             config = json.load(f)[name]
             return config
     except Exception as e:
-        print("Error with reading the config file.")
+        print(f"Error with reading the config file: {e}")
 
 
 ########## Conversions ##########

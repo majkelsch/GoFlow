@@ -2,6 +2,7 @@
 import app_secrets
 import gfi
 import gfe
+import gftools
 
 # Libs
 import datetime
@@ -9,7 +10,7 @@ import time
 
 #############
 
-updateTime = 30
+
 
 def main_loop():
     while True:
@@ -19,7 +20,7 @@ def main_loop():
             gfe.exportTasksToSheets()
         except Exception as e:
             print(f"[{datetime.datetime.now()}] Error in main_loop: {e}")
-        time.sleep(updateTime)
+        time.sleep(gftools.get_config("updateTime") or 60)
 
 
 while True:
