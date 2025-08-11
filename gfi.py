@@ -33,40 +33,43 @@ def getSolidpixelsData():
     Get data from SP sheets and insert them to the DB
     """
     try:
-        support_data = gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").get_all_values()
-        support_data.pop(0)
+        sheet = gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels")
+        if sheet:
+            support_data = sheet.get_all_values()
+            support_data.pop(0)
 
 
-        clientEmails = gfdb.get_all_client_emails()
-        clientEmailsList = []
-        for record in clientEmails:
-            clientEmailsList.append(record['email'])
+            clientEmails = gfdb.get_all_client_emails()
+            clientEmailsList = []
+            for record in clientEmails:
+                clientEmailsList.append(record['email'])
 
 
 
-        rowIndex = 2
-        for row in support_data:
+            rowIndex = 2
+            for row in support_data:
 
 
-            if row[8] != 'TRUE' and row[1].lower() in clientEmailsList:
-                gfdb.insert_task({
-                    "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(gfdb.get_newTaskID()).zfill(4)}",
-                    "client": gfdb.get_client(full_name=row[0])['id'],
-                    "project": gfdb.get_project(url=row[2])['id'],
-                    "title": "SUPPORT FORM",
-                    "description": str(row[4]),
-                    "employee": gfdb.get_employee(full_name=app_secrets.get("DEFAULT_SUPPORT_OWNER"))['id'],
-                    "priority": gfdb.get_task_priority(name="Low")['id'],
-                    "status": gfdb.get_task_status(name="Income")['id'],
-                    "arrived": datetime.datetime.now().replace(microsecond=0),
-                    "due": datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7),
-                    "hidden": False,
-                    "duration": 0
-                })
-                time.sleep(5)
-                gs_mngr.getSheet("SOLIDPIXELS_SPREADSHEET_ID", "Solidpixels").update_cell(rowIndex, 9, True)
-            rowIndex += 1
-
+                if row[8] != 'TRUE' and row[1].lower() in clientEmailsList:
+                    gfdb.insert_task({
+                        "support_id": f"SUP{str(datetime.datetime.now().year)[2:]}{str(gfdb.get_newTaskID()).zfill(4)}",
+                        "client": gfdb.get_client(full_name=row[0])['id'],
+                        "project": gfdb.get_project(url=row[2])['id'],
+                        "title": "SUPPORT FORM",
+                        "description": str(row[4]),
+                        "employee": gfdb.get_employee(full_name=app_secrets.get("DEFAULT_SUPPORT_OWNER"))['id'],
+                        "priority": gfdb.get_task_priority(name="Low")['id'],
+                        "status": gfdb.get_task_status(name="Income")['id'],
+                        "arrived": datetime.datetime.now().replace(microsecond=0),
+                        "due": datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7),
+                        "hidden": False,
+                        "duration": 0
+                    })
+                    time.sleep(5)
+                    sheet.update_cell(rowIndex, 9, True)
+                rowIndex += 1
+        else:
+            raise Exception("Couldn't find sheet")
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in getSolidpixelsData: {e}")
 

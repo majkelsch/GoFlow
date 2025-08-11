@@ -11,7 +11,13 @@ from datetime import timedelta
 
 
 class SerializableMixin:
-    def to_dict(self, include_relationships=False, max_depth=1, _depth=0):
+    def to_dict(
+        self,
+        include_relationships:Optional[list] | Optional[bool]=False,
+        exclude_relationships=None,
+        max_depth=1,
+        _depth=0
+    ):
         result = {}
         mapper = inspect(self).mapper
 
@@ -21,18 +27,43 @@ class SerializableMixin:
 
         # Relationships
         if include_relationships and _depth < max_depth:
+            # normalize parameters
+            if exclude_relationships is None:
+                exclude_relationships = []
+
+            # if include_relationships is list/tuple, limit to those
+            if isinstance(include_relationships, (list, tuple, set)):
+                rel_names = set(include_relationships)
+            else:
+                rel_names = {rel.key for rel in mapper.relationships}
+
             for rel in mapper.relationships:
+                if rel.key in exclude_relationships:
+                    continue
+                if rel.key not in rel_names:
+                    continue
+
                 value = getattr(self, rel.key)
 
                 if value is None:
                     result[rel.key] = None
                 elif rel.uselist:
                     result[rel.key] = [
-                        v.to_dict(include_relationships=True, max_depth=max_depth, _depth=_depth+1)
+                        v.to_dict(
+                            include_relationships=include_relationships,
+                            exclude_relationships=exclude_relationships,
+                            max_depth=max_depth,
+                            _depth=_depth+1
+                        )
                         for v in value
                     ]
                 else:
-                    result[rel.key] = value.to_dict(include_relationships=True, max_depth=max_depth, _depth=_depth+1)
+                    result[rel.key] = value.to_dict(
+                        include_relationships=include_relationships,
+                        exclude_relationships=exclude_relationships,
+                        max_depth=max_depth,
+                        _depth=_depth+1
+                    )
 
         return result
     

@@ -32,7 +32,23 @@ def clean(data):
         return cleaned_data
 
 
+def parse_include_exclude(request):
+    """Parse 'include' and 'exclude' parameters from a request dict."""
+    include = request.get('include')
+    exclude = request.get('exclude')
+    if exclude:
+        exclude = exclude.split(';')
+    else:
+        exclude = None
 
+    if str(include).lower() == 'true':
+        include = True
+    elif include:
+        include = include.split(';')
+    else:
+        include = None
+
+    return include, exclude
 
 
 
@@ -163,6 +179,7 @@ def accept_request(data):
 
 
     elif command == "insert_client":
+        print(payload)
         if gftools.get_config("advancedDebug"):
             print(f"├ Identified command - Inserting to DB")
         return_id = gfdb.insert_client(payload)
@@ -252,27 +269,35 @@ def api_endpoint():
         command = request.get('command')
 
         if command == 'getPositions':
-            return json.dumps(clean(gfdb.get_positions()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_positions(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getClients':
-            return json.dumps(clean(gfdb.get_clients()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_clients(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getProjects':
-            return json.dumps(clean(gfdb.get_projects()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_projects(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getEmployees':
-            return json.dumps(clean(gfdb.get_employees()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_employees(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getTaskPriorities':
-            return json.dumps(clean(gfdb.get_task_priorities()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_task_priorities(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getTaskStatuses':
-            return json.dumps(clean(gfdb.get_task_statuses()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_task_statuses(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getProjectStatuses':
-            return json.dumps(clean(gfdb.get_project_statuses()))
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_project_statuses(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getTasks':
-            return json.dumps(clean(gfdb.get_tasks()), cls=gftools.EnhancedJSONEncoder)
+            include, exclude = parse_include_exclude(request)
+            return json.dumps(clean(gfdb.get_tasks(exclude_relationships=exclude, include_relationships=include)), cls=gftools.EnhancedJSONEncoder)
         elif command == 'getProjectsByClient':
-            return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'])
+            return json.dumps(gfdb.get_client(id=request.get('client_id'))['projects'], cls=gftools.EnhancedJSONEncoder)
         elif command == 'getClientsByProject':
-            return json.dumps(gfdb.get_project(id=request.get('project_id'))['clients'])
+            return json.dumps(gfdb.get_project(id=request.get('project_id'))['clients'], cls=gftools.EnhancedJSONEncoder)
         elif command == 'serverStatus':
-            return json.dumps({"api_up": True})
+            return json.dumps({"api_up": True}, cls=gftools.EnhancedJSONEncoder)
         else:
             return {"message": f"Invalid request."}, 200
 
@@ -280,6 +305,10 @@ def api_endpoint():
 @app.route("/server-status")
 def server_status():
     return flask.render_template('server-status.html', api_status="functional", scripts_status="down")
+
+@app.route("/db-editor")
+def db_editor():
+    return flask.render_template('db-editor.html')
 
 
 if __name__ == "__main__":

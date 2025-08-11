@@ -191,12 +191,12 @@ def get_newTaskID():
 
 
 
-def get_tasks():
+def get_tasks(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         tasks = session.query(Tasks).all()
-        return [task.to_dict(include_relationships=True) for task in tasks]
+        return [task.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for task in tasks]
     finally:
         session.close()
 
@@ -275,12 +275,12 @@ def insert_task(data):
     finally:
         session.close()
 
-def get_task_priorities():
+def get_task_priorities(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         priorities = session.query(TaskPriorities).all()
-        return [priority.to_dict() for priority in priorities]
+        return [priority.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for priority in priorities]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task_priorities: {e}")
         null = session.query(TaskPriorities).first()
@@ -304,12 +304,12 @@ def get_task_priority(**kwargs) -> dict:
     finally:
         session.close()
 
-def get_task_statuses():
+def get_task_statuses(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         statuses = session.query(TaskStatuses).all()
-        return [status.to_dict() for status in statuses]
+        return [status.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for status in statuses]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_task_statuses: {e}")
         null = session.query(TaskStatuses).first()
@@ -424,12 +424,12 @@ def insert_client_email(data):
 
 
 
-def get_clients():
+def get_clients(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         clients = session.query(Clients).all()
-        return [client.to_dict() for client in clients]
+        return [client.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for client in clients]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_Clients_DB: {e}")
         null = session.query(Clients).first()
@@ -468,12 +468,12 @@ def get_client_emails(**kwargs) -> list[dict]:
     finally:
         session.close()
 
-def get_all_client_emails():
+def get_all_client_emails(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         emails = session.query(ClientsEmails).all()
-        return [email.to_dict() for email in emails]
+        return [email.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for email in emails]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_all_client_emails: {e}")
         return []
@@ -505,12 +505,12 @@ def insert_project(data: ProjectDict):
     finally:
         session.close()
 
-def get_projects():
+def get_projects(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         projects = session.query(Projects).all()
-        return [project.to_dict() for project in projects]
+        return [project.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for project in projects]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_projects: {e}")
         null = session.query(Projects).first()
@@ -535,12 +535,29 @@ def get_project(**kwargs) -> dict:
         session.close()
 
 
-def get_project_statuses():
+def insert_project_status(data: ProjectStatusDict):
+    session = db_init()
+
+    try:
+        record = ProjectsStatuses(
+            name=data['name']
+        )
+        session.add(record)
+        session.commit()
+        return record.id
+    except Exception as e:
+        print(f"Error creating project: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def get_project_statuses(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         statuses = session.query(ProjectsStatuses).all()
-        return [status.to_dict() for status in statuses]
+        return [status.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for status in statuses]
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in get_project_statuses: {e}")
         null = session.query(Projects).first()
@@ -590,12 +607,12 @@ def insert_employeePosition(data):
     finally:
         session.close()
 
-def get_positions():
+def get_positions(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         positions = session.query(EmployeePositions).all()
-        return [position.to_dict() for position in positions]
+        return [position.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for position in positions]
     except Exception as e:
         print(f"Error getting positions: {e}")
         null = session.query(EmployeePositions).first()
@@ -603,16 +620,16 @@ def get_positions():
     finally:
         session.close()
 
-def get_employees():
+def get_employees(exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False):
     session = db_init()
 
     try:
         employees = session.query(Employees).all()
-        return [employee.to_dict() for employee in employees]
+        return [employee.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for employee in employees]
     except Exception as e:
         print(f"Error getting employees: {e}")
         null = session.query(Employees).first()
-        return [null.to_dict()] if null else []
+        return [null.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships)] if null else []
     finally:
         session.close()
 
@@ -622,7 +639,7 @@ def get_employee(**kwargs) -> dict:
     try:
         employee = session.query(Employees).filter_by(**kwargs).first()
         if employee:
-            return employee.to_dict()
+            return employee.to_dict(include_relationships=True)
         else:
             raise Exception(f"Employee searched by '{kwargs}' not found.")
     except Exception as e:
@@ -631,6 +648,22 @@ def get_employee(**kwargs) -> dict:
         return null.to_dict() if null else {}
     finally:
         session.close()
+
+
+def update_employee(id, updates:dict):
+    session = db_init()
+    try:
+        employee = session.query(Employees).filter_by(id=id).first()
+        if employee:
+            for key, value in updates.items():
+                setattr(employee, key, value)
+        else:
+            raise Exception("No records found.")
+    except Exception as e:
+        print(f"Error updating employee: {e}")
+        session.rollback()  
+    finally:
+        session.commit()
 
 
 

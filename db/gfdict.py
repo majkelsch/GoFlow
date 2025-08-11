@@ -45,3 +45,6 @@ class EmployeeDict(TypedDict):
     email: str
     phone: str
     position: str
+
+class ProjectStatusDict(TypedDict):
+    name: str

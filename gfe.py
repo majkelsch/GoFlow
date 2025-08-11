@@ -38,128 +38,133 @@ import gspread
 
 
 def createTask(data):
-    body = {
-        "requests": [
-            {
-                "insertDimension": {
-                    "range": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
-                        "dimension": "ROWS",
-                        "startIndex": 1,
-                        "endIndex": 2
-                    },
-                    "inheritFromBefore": True
-                }
-            },
-            {
-                "updateCells": {
-                    "rows": [
-                        {
-                            "values": [
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": data['support_id']
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": gfdb.get_client(id=data['client_id'])['full_name']
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": gfdb.get_project(id=data['project_id'])['url']
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": data['title']
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": gfdb.get_employee(id=data['employee_id'])['full_name'] or app_secrets.get("DEFAULT_SUPPORT_OWNER")
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": gfdb.get_task_priority(id=data['priority_id'])['name']
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": gfdb.get_task_status(id=data['status_id'])['name']
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": str(data['arrived'])
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": str(data['due'])
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "numberValue": data['duration']/60
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "numberValue": data['duration']/60/60*1000
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": str(data['started']) if data['started'] is not None else ""
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": str(data['finished']) if data['finished'] is not None else ""
-                                    }
-                                },
-                                {
-                                    "userEnteredValue": {
-                                        "stringValue": data['description'][:5000]
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "fields": "*",
-                    "start": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
-                        "rowIndex": 1,
-                        "columnIndex": 0
-                    }
-                }
-            },
-            {
-                "updateDimensionProperties": {
-                    "properties": {
-                        "pixelSize": 28
-                    },
-                    "fields": "*",
-                    "range": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
-                        "dimension": "ROWS",
-                        "startIndex": 1,
-                        "endIndex": 2
-                    }
-                }
-            }
-        ]
-    }
+    sheet = gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow")
+    if sheet:
 
-    response = gs_mngr.getService().spreadsheets().batchUpdate(
-        spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
-        body=body
-    ).execute()
-    if gftools.get_config("advancedDebug"):
-        print(f"[API REQUEST SENT - POST] Response: {response}")
+        body = {
+            "requests": [
+                {
+                    "insertDimension": {
+                        "range": {
+                            "sheetId": sheet.id,
+                            "dimension": "ROWS",
+                            "startIndex": 1,
+                            "endIndex": 2
+                        },
+                        "inheritFromBefore": True
+                    }
+                },
+                {
+                    "updateCells": {
+                        "rows": [
+                            {
+                                "values": [
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": data['support_id']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_client(id=data['client_id'])['full_name']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_project(id=data['project_id'])['url']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": data['title']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_employee(id=data['employee_id'])['full_name'] or app_secrets.get("DEFAULT_SUPPORT_OWNER")
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_task_priority(id=data['priority_id'])['name']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": gfdb.get_task_status(id=data['status_id'])['name']
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(data['arrived'])
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(data['due'])
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "numberValue": data['duration']/60
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "numberValue": data['duration']/60/60*1000
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(data['started']) if data['started'] is not None else ""
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": str(data['finished']) if data['finished'] is not None else ""
+                                        }
+                                    },
+                                    {
+                                        "userEnteredValue": {
+                                            "stringValue": data['description'][:5000]
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "fields": "*",
+                        "start": {
+                            "sheetId": sheet.id,
+                            "rowIndex": 1,
+                            "columnIndex": 0
+                        }
+                    }
+                },
+                {
+                    "updateDimensionProperties": {
+                        "properties": {
+                            "pixelSize": 28
+                        },
+                        "fields": "*",
+                        "range": {
+                            "sheetId": sheet.id,
+                            "dimension": "ROWS",
+                            "startIndex": 1,
+                            "endIndex": 2
+                        }
+                    }
+                }
+            ]
+        }
+
+        response = gs_mngr.getService().spreadsheets().batchUpdate(
+            spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
+            body=body
+        ).execute()
+        if gftools.get_config("advancedDebug"):
+            print(f"[API REQUEST SENT - POST] Response: {response}")
+    else:
+        raise Exception("Could not create task, try again later")
 
 
 
@@ -173,18 +178,23 @@ def getMissingTasks():
 
         tasksID = set(tasksID)
 
-        existingTasksID = list(itertools.chain.from_iterable(gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").get_values(f'A2:A{gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").row_count}')))
-        existingTasksID = set(existingTasksID)
-        
-        difference = tasksID.symmetric_difference(existingTasksID)
-        pendingTasks = sorted(list(difference))
+        sheet = gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow")
+        if sheet:
+ 
+            existingTasksID = list(itertools.chain.from_iterable(sheet.get_values(f'A2:A{sheet.row_count}')))
+            existingTasksID = set(existingTasksID)
+            
+            difference = tasksID.symmetric_difference(existingTasksID)
+            pendingTasks = sorted(list(difference))
 
-        finalList = []
-        for task_id in pendingTasks:
-            if gfdb.get_task(support_id=task_id)['hidden'] == False:
-                finalList.append(task_id)
+            finalList = []
+            for task_id in pendingTasks:
+                if gfdb.get_task(support_id=task_id)['hidden'] == False:
+                    finalList.append(task_id)
 
-        return list(finalList)
+            return list(finalList)
+        else:
+            return []
     else:
         return []
 
@@ -243,7 +253,8 @@ def update_task(support_id):
     row_id = result.index(support_id)
 
     task = gfdb.get_task(support_id=support_id)
-    if task:
+    sheet = gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow")
+    if task and sheet:
 
         body = {
             "requests": [
@@ -327,7 +338,7 @@ def update_task(support_id):
                         ],
                         "fields": "*",
                         "start": {
-                            "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
+                            "sheetId": sheet.id,
                             "rowIndex": row_id,
                             "columnIndex": 0
                         }
@@ -351,24 +362,28 @@ def end_task(support_id):
     result = list(itertools.chain(*response['values']))
     row_id = result.index(support_id)
 
-    body = {
-        "requests": [
-            {
-                "deleteDimension": {
-                    "range": {
-                        "sheetId": gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow").id,
-                        "dimension": "ROWS",
-                        "startIndex": row_id,
-                        "endIndex": row_id + 1
+    sheet = gs_mngr.getSheet("GOFLOW_SPREADSHEET_ID", "GoFlow")
+    if sheet:
+        body = {
+            "requests": [
+                {
+                    "deleteDimension": {
+                        "range": {
+                            "sheetId": sheet.id,
+                            "dimension": "ROWS",
+                            "startIndex": row_id,
+                            "endIndex": row_id + 1
+                        }
                     }
                 }
-            }
-        ]
-    }
+            ]
+        }
 
-    response = gs_mngr.getService().spreadsheets().batchUpdate(
-        spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
-        body=body
-    ).execute()
-    if gftools.get_config("advancedDebug"):
-        print(f"[API REQUEST SENT - POST] Response: {response}")
+        response = gs_mngr.getService().spreadsheets().batchUpdate(
+            spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
+            body=body
+        ).execute()
+        if gftools.get_config("advancedDebug"):
+            print(f"[API REQUEST SENT - POST] Response: {response}")
+    else:
+        raise Exception("Could not end task, please try again later.")

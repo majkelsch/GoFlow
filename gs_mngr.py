@@ -68,7 +68,6 @@ def getSheet(spreadsheet_id:str, sheet_name:str):
         return sheet
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Error in gs_mngr.py: {e}")
-        sys.exit(1)
     
 
 

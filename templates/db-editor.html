@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div style="background-color: white; width: 100%; height: 100px;">
+        <input type="button" value="Clients" onclick="getClients()">
+        <input type="button" value="Projects" onclick="getProjects()">
+        <input type="button" value="Project Statuses" onclick="getProjectStatuses()">
+        <input type="button" value="Employees" onclick="getEmployees()">
+        <input type="button" value="Tasks" onclick="getTasks()">
+    </div>
+    <div id="content">
+
+    </div>
+</body>
+
+</html>
+<script>
+    API_URL = 'http://34.67.248.8/api'
+    const editor = document.querySelector('#content')
+
+    function getClients() {
+        fetchAndPopulate(
+            'getClients',
+            data => {
+                populateTable(
+                    data, ['ID', 'First Name', 'Last Name', 'Emails', 'Projects'],
+                    clientRowMapper
+                );
+                createRecord = document.createElement('input')
+                createRecord.type = 'button'
+                createRecord.value = 'Create'
+                createRecord.name = 'createRecord'
+                createRecord.onclick = function() {
+                    createNewRecord(table = {
+                        first_name: 'text',
+                        last_name: 'text',
+                        email: 'email'
+                    }, command = 'insert_client')
+                };
+                editor.appendChild(createRecord);
+            },
+            '&include=true&exclude=tasks'
+        );
+    }
+
+    function getProjects() {
+        fetchAndPopulate(
+            'getProjects',
+            data => {
+                populateTable(
+                    data, ['ID', 'URL', 'Status', 'Clients'],
+                    clientRowMapper
+                );
+                createRecord = document.createElement('input')
+                createRecord.type = 'button'
+                createRecord.value = 'Create'
+                createRecord.name = 'createRecord'
+                createRecord.onclick = function() {
+                    createNewRecord(table = {
+                        url: 'text',
+                        status: 'text'
+                    }, command = 'insert_project')
+                };
+                editor.appendChild(createRecord);
+            },
+            '&include=true&exclude=tasks'
+        );
+    }
+
+    function getEmployees() {
+        fetchAndPopulate(
+            'getEmployees',
+            data => {
+                populateTable(
+                    data, ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Position'],
+                    clientRowMapper
+                );
+                // Add create button if needed
+            },
+            '&include=true&exclude=tasks'
+        );
+    }
+
+    function getProjectStatuses() {
+        fetchAndPopulate(
+            'getProjectStatuses',
+            data => {
+                populateTable(
+                    data, ['ID', 'Name'],
+                    clientRowMapper
+                );
+                // Add create button if needed
+            },
+            ''
+        );
+    }
+
+    function getTasks() {
+        fetchAndPopulate(
+            'getTasks',
+            data => {
+                populateTable(
+                    data, ['ID', 'Support ID', 'Client', 'Project', 'Title', 'Descriptions', 'Employee', 'Priority', 'Status', 'Hidden', 'Arrived', 'Due', 'Duration', 'Started', 'Finished', 'Email ID'],
+                    clientRowMapper
+                );
+                // Add create button if needed
+            },
+            '&include=true'
+        );
+    }
+
+    function fetchAndPopulate(command, populateFn, params = '') {
+        fetch(`${API_URL}?command=${command}${params}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => populateFn(data))
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert('Error: ' + error.message);
+            });
+    }
+
+    function createContentHeaders(headers) {
+        headerRow = document.createElement('div')
+        headerRow.className = 'header-row'
+        headers.forEach(el => {
+            header = document.createElement('p')
+            header.innerHTML = el
+
+            headerRow.appendChild(header)
+        });
+        return headerRow
+    }
+
+    function postToServer(json) {
+        fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: json
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                popup.remove()
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+    }
+
+
+
+
+
+
+    function createNewRecord(table, command) {
+        popup = document.createElement('form');
+        popup.className = 'popup'
+        for (let [key, val] of Object.entries(table)) {
+            input = document.createElement('input');
+            input.type = val;
+            input.name = key;
+            input.placeholder = key;
+            popup.appendChild(input);
+        }
+        btn_create = document.createElement('input');
+        btn_create.type = 'button'
+        btn_create.name = 'create'
+        btn_create.value = 'Create'
+        btn_create.onclick = function() {
+            alert("Read only, POST requests are not functional")
+                //json_body = {}
+                //data = new FormData(popup)
+                //obj = Object.fromEntries(data)
+                //json_body['command'] = command
+                //json_body['data'] = obj
+                //json = JSON.stringify(json_body)
+                //postToServer(json)
+            popup.remove()
+        }
+        popup.appendChild(btn_create);
+        document.body.appendChild(popup);
+    }
+
+    function populateTable(data, headers, rowMapper) {
+        editor.innerHTML = '';
+        editor.appendChild(createContentHeaders(headers));
+        data.forEach(element => {
+            const row = rowMapper(element);
+            editor.appendChild(row);
+        });
+    }
+
+    function clientRowMapper(element) {
+        const row = document.createElement('div');
+        // ID
+        if (element.id != null) {
+            const record_id = document.createElement('input');
+            record_id.type = 'text';
+            record_id.value = element.id;
+            record_id.name = 'record_id';
+            record_id.disabled = true;
+            record_id.className = 'record_id';
+            row.appendChild(record_id);
+        }
+        // Support ID
+        if (element.support_id != null) {
+            const record_support_id = document.createElement('input');
+            record_support_id.type = 'text';
+            record_support_id.value = element.support_id;
+            record_support_id.name = 'record_support_id';
+            record_support_id.disabled = true;
+            row.appendChild(record_support_id);
+        }
+        // Client (Single)
+        if (element.client != null) {
+            const record_client = document.createElement('input');
+            record_client.type = 'text'
+            record_client.value = element.client.full_name
+            record_client.name = 'record_client'
+            row.appendChild(record_client)
+        }
+        // Project (Single)
+        if (element.project != null) {
+            const record_project = document.createElement('input');
+            record_project.type = 'text'
+            record_project.value = element.project.url
+            record_project.name = 'record_project'
+            row.appendChild(record_project)
+        }
+
+        // Name
+        if (element.name != null) {
+            const record_name = document.createElement('input');
+            record_name.type = 'text';
+            record_name.value = element.name;
+            record_name.name = 'record_name';
+            row.appendChild(record_name);
+        }
+        // First Name
+        if (element.first_name != null) {
+            const record_fname = document.createElement('input');
+            record_fname.type = 'text';
+            record_fname.value = element.first_name;
+            record_fname.name = 'record_fname';
+            row.appendChild(record_fname);
+        }
+        // Last Name
+        if (element.last_name != null) {
+            const record_lname = document.createElement('input');
+            record_lname.type = 'text';
+            record_lname.value = element.last_name;
+            record_lname.name = 'record_lname';
+            row.appendChild(record_lname);
+        }
+        // Title
+        if (element.title != null) {
+            const record_title = document.createElement('input');
+            record_title.type = 'text';
+            record_title.value = element.title;
+            record_title.name = 'record_title';
+            row.appendChild(record_title);
+        }
+        // Description
+        if (element.description != null) {
+            const record_description = document.createElement('input');
+            record_description.type = 'text';
+            record_description.value = element.description;
+            record_description.name = 'record_description';
+            row.appendChild(record_description);
+        }
+
+        // Employee
+        if (element.employee != null) {
+            const record_employee = document.createElement('input');
+            record_employee.type = 'text';
+            record_employee.value = element.employee.full_name
+            record_employee.name = 'record_employee';
+            row.appendChild(record_employee);
+        }
+        // Priority (Single)
+        if (element.priority != null) {
+            const record_priority = document.createElement('input');
+            record_priority.type = 'text'
+            record_priority.value = element.priority.name
+            record_priority.name = 'record_status'
+            row.appendChild(record_priority)
+        }
+        // Status (Single | Any)
+        if (element.status != null) {
+            const record_status = document.createElement('input');
+            record_status.type = 'text'
+            record_status.value = element.status.name
+            record_status.name = 'record_status'
+            row.appendChild(record_status)
+        }
+        // Email (Single | Employee)
+        if (element.email != null) {
+            const record_email = document.createElement('input');
+            record_email.type = 'email'
+            record_email.value = element.email
+            record_email.name = 'record_email'
+            row.appendChild(record_email)
+        }
+        // Phone (Single | Employee)
+        if (element.phone != null) {
+            const record_phone = document.createElement('input');
+            record_phone.type = 'phone'
+            record_phone.value = element.phone
+            record_phone.name = 'record_phone'
+            row.appendChild(record_phone)
+        }
+
+        // Position (Single | Employee)
+        if (element.position != null) {
+            const record_position = document.createElement('input');
+            record_position.type = 'text'
+            record_position.value = element.position.name
+            record_position.name = 'record_position'
+            row.appendChild(record_position)
+        }
+        // URL
+        if (element.url != null) {
+            const record_url = document.createElement('input');
+            record_url.type = 'url'
+            record_url.value = element.url
+            record_url.name = 'record_url'
+            row.appendChild(record_url)
+        }
+
+
+        // Emails (Multiple)
+        if (element.emails != null && element.emails.length > 0) {
+            const column = document.createElement('div');
+            column.className = 'column';
+            element.emails.forEach(el => {
+                const record_email = document.createElement('input');
+                record_email.type = 'text';
+                record_email.value = el.email;
+                record_email.name = 'record_email';
+                column.appendChild(record_email);
+            });
+            row.appendChild(column);
+        }
+        // Projects (Multiple)
+        if (element.projects != null && element.projects.length > 0) {
+            const column = document.createElement('div');
+            column.className = 'column';
+            element.projects.forEach(el => {
+                const record_project = document.createElement('input');
+                record_project.type = 'url';
+                record_project.value = el.url;
+                record_project.name = 'record_project';
+                column.appendChild(record_project);
+            });
+            row.appendChild(column);
+        }
+        // Clients (Multiple)
+        if (element.clients != null && element.clients.length > 0) {
+            const column = document.createElement('div');
+            column.className = 'column';
+            element.clients.forEach(el => {
+                const record_client = document.createElement('input');
+                record_client.type = 'text';
+                record_client.value = el.full_name;
+                record_client.name = 'record_client';
+                column.appendChild(record_client);
+            });
+            row.appendChild(column);
+        }
+        return row;
+    }
+</script>
+
+
+<style>
+    /* CLEAN PLATE */
+    
+     :root {
+        --bg-color-dark: #252525;
+    }
+    
+    body {
+        background-color: var(--bg-color-dark);
+        color: white;
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+    }
+    
+    h1,
+    h2,
+    h3 {
+        margin-inline-start: 0;
+        margin-inline-end: 0;
+        margin-block-start: 0;
+        margin-block-end: 0;
+    }
+    
+    .container {
+        display: flex;
+        width: 100%;
+        box-shadow: inset 0 0 1px #ffffff33;
+    }
+    
+    .wing {
+        display: flex;
+        width: 50%;
+        box-shadow: inset 0 0 1px #ffffff33;
+    }
+</style>
+<style>
+    div#content {
+        overflow-x: scroll;
+    }
+    
+    div#content div {
+        display: flex;
+        min-width: min-content;
+    }
+    
+    div#content div.column:has(input:not(:only-child)) {
+        display: flex;
+        flex-direction: column;
+        outline: 1px solid #ffffff33;
+    }
+    
+    div.header-row p {
+        width: 180px;
+        margin: 10px 5px;
+    }
+    
+    div#content input {
+        width: 180px;
+        height: 30px;
+        margin: 10px 5px;
+        color: #fff;
+        background-color: #353839;
+        border: 0;
+        padding: 0;
+    }
+    
+     :focus {
+        outline: 1px solid white;
+    }
+    
+     :disabled {
+        opacity: 0.2;
+    }
+    
+    div#content input.record_id,
+    div.header-row p:first-child {
+        width: 80px;
+    }
+    
+    .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
