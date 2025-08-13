@@ -4,6 +4,8 @@ import gftools
 import gfdb
 import gfm
 
+from db.gflog import Base
+
 # Libs
 import flask
 import requests
@@ -12,6 +14,8 @@ import threading
 import datetime
 import time
 import json
+import random
+import base64
 
 
 #############
@@ -50,6 +54,8 @@ def parse_include_exclude(request):
 
     return include, exclude
 
+
+MODEL_LOOKUP = {cls.__name__: cls for cls in Base.registry.mappers for cls in [cls.class_]}
 
 
 
@@ -300,6 +306,112 @@ def api_endpoint():
             return json.dumps({"api_up": True}, cls=gftools.EnhancedJSONEncoder)
         else:
             return {"message": f"Invalid request."}, 200
+
+
+
+
+
+
+
+def accept_post_request_v1(data):
+    command = data.get("command")
+    payload = data.get("payload")
+    req_id = random.randint(1000,9999)
+
+    gftools.console_log(f"┌ ({req_id}) [API V1 - POST] Command: {command} | Payload: {payload}")
+
+    match command:
+        case 'insert_one':
+            gftools.console_log(f"├ ({req_id}) Identified command")
+            return_id = gfdb.insert_one(
+                model=MODEL_LOOKUP[payload['model']],
+                data=payload['data'],
+                related_fields=payload.get('related_fields', None)
+                )
+            gftools.console_log(f"└ ({req_id}) Inserted into DB with id: {return_id}")
+
+        case 'update_one':
+            gftools.console_log(f"├ ({req_id}) Identified command")
+            return_id = gfdb.update_one(
+                model=MODEL_LOOKUP[payload['model']],
+                record_id=payload['record_id'],
+                updates=payload['updates']
+            )
+            gftools.console_log(f"└ ({req_id}) Updated id: {return_id} in {MODEL_LOOKUP[payload['model']]} to {payload['updates']}")
+        
+        case 'delete_one':
+            gftools.console_log(f"├ ({req_id}) Identified command")
+            return_id = gfdb.delete_one(
+                model=MODEL_LOOKUP[payload['model']],
+                record_id=payload['record_id']
+            )
+            if return_id:
+                gftools.console_log(f"└ ({req_id}) Deleted id: {payload['record_id']} in {MODEL_LOOKUP[payload['model']]}")
+            else:
+                gftools.console_log(f"└ [X] ({req_id}) Couldn't delete id: {payload['record_id']} in {MODEL_LOOKUP[payload['model']]}")
+        
+        case 'delete_by_filters':
+            gftools.console_log(f"├ ({req_id}) Identified command")
+            return_id = gfdb.delete_by_filters(
+                model=MODEL_LOOKUP[payload['model']],
+                filters=payload['filters']
+            )
+            if return_id > 0:
+                gftools.console_log(f"└ ({req_id}) Deleted {return_id} in {MODEL_LOOKUP[payload['model']]}")
+            else:
+                gftools.console_log(f"└ [X] ({req_id}) No records deleted in {MODEL_LOOKUP[payload['model']]}")
+
+
+
+        #case 'get_one':
+        #    gftools.console_log(f"├ ({req_id}) Identified command")
+        #    model = MODEL_LOOKUP[payload['model']]
+        #    include_relationships = payload.get('include_relationships', None)
+        #    exclude_relationships = payload.get('exclude_relationships', None)
+        #    max_depth = payload.get('max_depth', None)
+        #    identifiers = payload['identifiers']
+        #    print(gfdb.get_one(model=model, include_relationships=include_relationships, exclude_relationships=exclude_relationships, max_depth=max_depth, **identifiers))
+        case _:
+            gftools.console_log(f"├ ({req_id}) Command: `{command}`, not identified.")
+
+
+def accept_get_request_v1(data):
+    data_json = json.loads(gftools.url_b64_decode(data))
+    command = data_json['command']
+    match command:
+        case 'get_one':
+            include, exclude = parse_include_exclude(data_json)
+            model = data_json.get('model', None)
+            identifiers = data_json.get('identifiers', None)
+            if model and identifiers:
+                return gfdb.get_one(
+                    model=MODEL_LOOKUP[model],
+                    include_relationships=include,
+                    exclude_relationships=exclude,
+                    max_depth=data_json.get('max-depth', 1),
+                    **identifiers
+                )
+            else:
+                return {"message": f"Invalid request."}, 200
+        case 'get_all':
+            return {"message": f"Invalid request."}, 200
+        case _:
+            return {"message": f"Invalid request."}, 200
+
+
+
+
+
+
+@app.route("/api/v1", methods=["GET", "POST"])
+def api_v1():
+    if flask.request.method == "POST":
+        data = flask.request.get_json()
+        threading.Thread(target=accept_post_request_v1, args=(data,)).start()
+        return {"status": "processing"}, 200
+    else:  # GET request
+        data = flask.request.args.get('data')
+        return accept_get_request_v1(data)
 
 
 @app.route("/server-status")

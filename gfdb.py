@@ -3,12 +3,12 @@ from db.gfsessions import session, db_init
 from db.gflog import attach_logger, DBChangeLog, Base
 from db.gfdict import *
 
-
 import gftools
 import app_secrets
 
 
 import json
+from typing import Optional, Type, Any
 
 
 
@@ -766,5 +766,150 @@ def assignProjectToClient(client_id, project_id):
     except Exception as e:
         print(f"Error pairing records: {e}")
         session.rollback()
+    finally:
+        session.close()
+
+#######################################################
+#######################################################
+#######################################################
+
+
+def get_one(model: Type[Any], include_relationships: Optional[list] | Optional[bool] = False, exclude_relationships: Optional[list] = None, max_depth:Optional[int]=1, **kwargs) -> dict:
+    """
+    Parameters
+    ----------
+        model : Type[Any]
+            - Class of the table
+
+        include_relationships : Optional[list] | Optional[bool]
+            - list: include listed tables
+            - bool: True = include all, False = include none
+            - default = False
+        
+        exclude_relationships : Optional[list]
+            - list: exclude listed tables
+            - default = None
+
+        max_depth : Optional[int]
+            - Max depth the relationshiops should be included
+            - default = 1
+
+        **kwargs
+            - Identifiers
+    
+    """
+    session = db_init()
+    try:
+        record = session.query(model).filter_by(**kwargs).first()
+        if record:
+            return record.to_dict(include_relationships=include_relationships ,exclude_relationships=exclude_relationships, max_depth=max_depth)
+        raise Exception(f"{model.__name__} searched by '{kwargs}' not found.")
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_one({model.__name__}): {e}")
+        null = session.query(model).first()
+        return null.to_dict(include_relationships=include_relationships ,exclude_relationships=exclude_relationships) if null else {}
+    finally:
+        session.close()
+
+
+def get_all(model: Type[Any], exclude_relationships: Optional[list] = None, include_relationships: Optional[list] | Optional[bool] = False, max_depth:Optional[int]=1, filters: Optional[dict] = None):
+    session = db_init()
+    try:
+        query = session.query(model)
+        if filters:
+            query = query.filter_by(**filters)
+        records = query.all()
+        return [r.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for r in records]
+    except Exception as e:
+        print(f"[{datetime.datetime.now()}] Error in get_all({model.__name__}): {e}")
+        null = session.query(model).first()
+        return [null.to_dict()] if null else []
+    finally:
+        session.close()
+
+
+def insert_one(model: Type[Any], data: dict, related_fields: Optional[dict] = None):
+    """
+    Parameters
+    ----------
+        model : Type[Any]
+            - Class of the table
+
+        data : dict
+            - Data to insert
+
+        related_fields: Optional[dict]
+            - Syntax: {"referenced_value": (ReferencedTableClass, "search_key")}
+        
+        Ex. `insert_one(Projects, {"url": "http://...", "status": 1}, related_fields={"status": (ProjectsStatuses, "name")})`
+    
+    """
+    session = db_init()
+    try:
+        # Resolve related fields (foreign keys by name or id)
+        if related_fields:
+            for field, (related_model, key) in related_fields.items():
+                value = data.get(field)
+                if isinstance(value, int) or (isinstance(value, str) and value.isnumeric()):
+                    rel_obj = session.query(related_model).filter_by(id=value).first()
+                else:
+                    rel_obj = session.query(related_model).filter_by(**{key: value}).first()
+                data[field] = rel_obj
+
+        record = model(**data)
+        session.add(record)
+        session.commit()
+        return record.id
+    except Exception as e:
+        print(f"Error creating {model.__name__}: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def update_one(model: Type[Any], record_id: Any, updates: dict):
+    session = db_init()
+    try:
+        record = session.query(model).filter_by(id=record_id).first()
+        if record:
+            for key, value in updates.items():
+                setattr(record, key, value)
+        else:
+            raise Exception(f"No {model.__name__} record found with id {record_id}.")
+    except Exception as e:
+        print(f"Error updating {model.__name__}: {e}")
+        session.rollback()
+    finally:
+        session.commit()
+        session.close()
+
+def delete_one(model: Type[Any], record_id: Any):
+    session = db_init()
+    try:
+        record = session.query(model).filter_by(id=record_id).first()
+        if record:
+            session.delete(record)
+            session.commit()
+            return True
+        else:
+            raise Exception(f"No {model.__name__} record found with id {record_id}.")
+    except Exception as e:
+        print(f"Error deleting {model.__name__}: {e}")
+        session.rollback()
+        return False
+    finally:
+        session.close()
+
+def delete_by_filters(model: Type[Any], filters: dict):
+    session = db_init()
+    try:
+        query = session.query(model).filter_by(**filters)
+        count = query.delete()
+        session.commit()
+        return count
+    except Exception as e:
+        print(f"Error deleting {model.__name__} by filters: {e}")
+        session.rollback()
+        return 0
     finally:
         session.close()

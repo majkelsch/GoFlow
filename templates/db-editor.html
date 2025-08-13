@@ -39,9 +39,18 @@
                 createRecord.name = 'createRecord'
                 createRecord.onclick = function() {
                     createNewRecord(table = {
-                        first_name: 'text',
-                        last_name: 'text',
-                        email: 'email'
+                        first_name: {
+                            element: 'input',
+                            type: 'text'
+                        },
+                        last_name: {
+                            element: 'input',
+                            type: 'text'
+                        },
+                        email: {
+                            element: 'input',
+                            type: 'email'
+                        }
                     }, command = 'insert_client')
                 };
                 editor.appendChild(createRecord);
@@ -63,10 +72,20 @@
                 createRecord.value = 'Create'
                 createRecord.name = 'createRecord'
                 createRecord.onclick = function() {
-                    createNewRecord(table = {
-                        url: 'text',
-                        status: 'text'
-                    }, command = 'insert_project')
+                    fetchAndReturn('getProjectStatuses', '').then(options => {
+                        createNewRecord({
+                                url: {
+                                    element: 'input',
+                                    type: 'url'
+                                },
+                                status: {
+                                    element: 'select',
+                                    options: options
+                                }
+                            },
+                            'insert_project'
+                        );
+                    });
                 };
                 editor.appendChild(createRecord);
             },
@@ -82,7 +101,37 @@
                     data, ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Position'],
                     clientRowMapper
                 );
-                // Add create button if needed
+                createRecord = document.createElement('input')
+                createRecord.type = 'button'
+                createRecord.value = 'Create'
+                createRecord.name = 'createRecord'
+                createRecord.onclick = function() {
+                    fetchAndReturn('getPositions', '').then(options => {
+                        createNewRecord(table = {
+                            first_name: {
+                                element: 'input',
+                                type: 'text'
+                            },
+                            last_name: {
+                                element: 'input',
+                                type: 'text'
+                            },
+                            email: {
+                                element: 'input',
+                                type: 'email'
+                            },
+                            phone: {
+                                element: 'input',
+                                type: 'phone'
+                            },
+                            position: {
+                                element: 'select',
+                                options: options
+                            }
+                        }, command = 'insert_client')
+                    });
+                };
+                editor.appendChild(createRecord);
             },
             '&include=true&exclude=tasks'
         );
@@ -129,6 +178,22 @@
             });
     }
 
+    function fetchAndReturn(command, returnItem, params = '') {
+        return fetch(`${API_URL}?command=${command}${params}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                return data;
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert('Error: ' + error.message);
+            });
+    }
+
+
     function createContentHeaders(headers) {
         headerRow = document.createElement('div')
         headerRow.className = 'header-row'
@@ -164,35 +229,67 @@
 
 
 
-
     function createNewRecord(table, command) {
         popup = document.createElement('form');
         popup.className = 'popup'
         for (let [key, val] of Object.entries(table)) {
-            input = document.createElement('input');
-            input.type = val;
+            input = document.createElement(val.element);
+            if (val.element == 'select') {
+                val.options.forEach(element => {
+                    option = document.createElement('option');
+                    option.value = element.id;
+                    option.textContent = element.name;
+                    input.appendChild(option);
+                });
+            } else {
+                input.type = val.type;
+            }
             input.name = key;
             input.placeholder = key;
             popup.appendChild(input);
         }
-        btn_create = document.createElement('input');
-        btn_create.type = 'button'
-        btn_create.name = 'create'
-        btn_create.value = 'Create'
-        btn_create.onclick = function() {
-            alert("Read only, POST requests are not functional")
-                //json_body = {}
-                //data = new FormData(popup)
-                //obj = Object.fromEntries(data)
-                //json_body['command'] = command
-                //json_body['data'] = obj
-                //json = JSON.stringify(json_body)
-                //postToServer(json)
-            popup.remove()
-        }
-        popup.appendChild(btn_create);
         document.body.appendChild(popup);
     }
+
+
+
+    /*
+        function createNewRecord(table, command) {
+            popup = document.createElement('form');
+            popup.className = 'popup'
+            for (let [key, val] of Object.entries(table)) {
+                input = document.createElement('input');
+                input.type = val;
+                input.name = key;
+                input.placeholder = key;
+                popup.appendChild(input);
+            }
+                
+
+
+
+            btn_create = document.createElement('input');
+            btn_create.type = 'button'
+            btn_create.name = 'create'
+            btn_create.value = 'Create'
+            btn_create.onclick = function() {
+                alert("Read only, POST requests are not functional")
+                    //json_body = {}
+                    //data = new FormData(popup)
+                    //obj = Object.fromEntries(data)
+                    //json_body['command'] = command
+                    //json_body['data'] = obj
+                    //json = JSON.stringify(json_body)
+                    //postToServer(json)
+                popup.remove()
+            }
+            popup.appendChild(btn_create);
+            document.body.appendChild(popup);
+        }
+
+
+        */
+
 
     function populateTable(data, headers, rowMapper) {
         editor.innerHTML = '';

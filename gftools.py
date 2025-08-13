@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 import time
 import typing
-
+import base64
 
 ########## Flags ##########
 
@@ -132,3 +132,21 @@ class EnhancedJSONEncoder(json.JSONEncoder):
         if isinstance(o, datetime):
             return o.isoformat()
         return super().default(o)
+
+
+def url_b64_decode(data:str):
+    return base64.urlsafe_b64decode(data.encode('utf-8')).decode('utf-8')
+
+
+def url_b64_encode(data:dict):
+    return base64.urlsafe_b64encode(json.dumps(data).encode('utf-8')).decode('utf-8')
+
+
+
+########## Loggig [WIP] ##########
+
+def console_log(msg):
+    if get_config("advancedDebug"):
+        print(msg)
+
+
