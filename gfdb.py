@@ -736,7 +736,8 @@ def transfer_emailsToTasks():
                 "status": get_task_status(name="Income")['id'],
                 "arrived": email["date"],
                 "due": email["date"] + timedelta(days=7),
-                "email_id": str(email["id"])
+                "email_id": str(email["id"]),
+                "reply_email": str(email['sender'])
             })
     except Exception as e:
         print(f"Error transferring: {e}")

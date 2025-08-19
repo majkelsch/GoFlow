@@ -198,6 +198,7 @@ class Tasks(Base, SerializableMixin):
 
     email_id = Column(Integer, ForeignKey('emails.id'), nullable=True)
     email = relationship('Emails', back_populates='task', uselist=False)
+    reply_email = Column(String, nullable=True)
 
     timetrackers = relationship('Timetrackers', back_populates='task')
 

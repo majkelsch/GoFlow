@@ -1,0 +1,362 @@
+/*
+########################################
+# KardCSS by Michal Schenk             #
+# https://github.com/majkelsch/KardCSS #
+########################################
+*/
+
+
+
+/* CLEAN UP */
+
+:root {
+    --dark-grey-bg: #111;
+    --dark-bg: #000;
+    --light-bg: #fefefe;
+    --dark-border: #161615;
+    --dark-grey-border: #222;
+    --light-border: #656565;
+    --dark-grey-text: #88888a;
+    --light-grey-text: #c6c9cb;
+    --light-text: #fff;
+}
+
+body {
+    background-color: var(--dark-bg);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-size: 14px;
+}
+
+* {
+    max-width: 100%;
+}
+
+p,
+h1,
+h2,
+h3,
+h4 {
+    margin: 0;
+}
+
+
+/* ORGANIZATION */
+
+div.container {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.column {
+    flex-direction: column;
+}
+
+div.width-33 {
+    width: calc(100%/3);
+}
+
+.width-50 {
+    width: 50%;
+}
+
+div.width-66 {
+    width: calc(100%/3*2);
+}
+
+div.width-100 {
+    width: 100%;
+}
+
+div.height-100 {
+    height: 100%;
+}
+
+.pad-15 {
+    padding: 15px;
+}
+
+
+/* FONTS */
+
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+/* STYLIZED DIVs */
+
+div.header,
+div.footer {
+    background-color: var(--dark-grey-bg);
+    color: var(--dark-grey-text);
+    padding: 30px;
+    border: 1px solid var(--dark-grey-border);
+}
+
+div.textured {
+    border: 1px solid var(--dark-grey-border);
+    background-image: var(--tex-diag, none), var(--tex-line, none), var(--tex-grid, none);
+    background-color: rgba(0, 0, 0, 0.85);
+    background-blend-mode: darken;
+}
+
+div.tex-diagonals {
+    --tex-diag: url(textures/tex_diagonals.png);
+    background-size: 15%;
+}
+
+div.tex-lines {
+    --tex-line: url(textures/tex_lines.png);
+    background-size: 15%;
+}
+
+div.tex-grid {
+    --tex-grid: url(textures/tex_grid.png);
+    background-size: 3%;
+}
+
+
+/* TEXT/TYPOGRAPHY */
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.capitalize {
+    text-transform: capitalize;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+small {
+    width: fit-content;
+    height: fit-content;
+}
+
+p {
+    font-family: "Roboto Mono", monospace;
+    letter-spacing: 3px;
+    font-weight: 400;
+    transform: scaleX(.8);
+    transform-origin: left;
+    padding: 10px 0px;
+    font-size: 12px;
+}
+
+p.small {
+    font-size: 10px;
+}
+
+.smaller {
+    font-size: 14px;
+}
+
+h1+p {
+    padding-top: 0;
+}
+
+h1 {
+    font-family: "Rubik", sans-serif;
+    font-weight: 600;
+    font-size: 2em;
+    color: #fff;
+    border-image: linear-gradient(to right, #ffffff 0%, transparent 90%) 1;
+    padding-right: 10px;
+    border-width: 2px;
+    border-style: solid;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    padding: 4px 10px 4px 0;
+    margin: 10px 0;
+}
+
+h2 {
+    font-family: "Roboto Mono", monospace;
+    letter-spacing: 2px;
+    font-weight: 400;
+    transform: scaleX(.8);
+    transform-origin: left;
+}
+
+img {
+    width: 100%;
+}
+
+div.subheader {
+    border-bottom: 1px solid var(--dark-border);
+    margin-bottom: 10px;
+}
+
+.border-bottom-sharp {
+    border-bottom: 1px solid var(--light-border);
+}
+
+div.content {
+    padding: 30px;
+    color: var(--light-text);
+    display: flex;
+}
+
+div.card {
+    background-color: #1a1a1a;
+    padding: 15px;
+    margin: 15px 0;
+    box-shadow: 0 0 1px inset;
+    border-left: 2px solid #fff;
+    color: var(--light-grey-text);
+    height: fit-content;
+}
+
+div.card p {
+    font-family: "Rubik", sans-serif;
+    transform: unset;
+    letter-spacing: unset;
+    font-size: 22px;
+    letter-spacing: 1px;
+}
+
+div.one-line {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.tag {
+    background-color: #1a1a1a;
+    padding: 10px;
+    box-shadow: 0 0 1px inset var(--light-border);
+    border-left: 2px solid #fff;
+    height: fit-content;
+}
+
+.tag p {
+    font-family: "Roboto Mono", monospace;
+    font-weight: 900;
+    font-size: 20px;
+    padding: 0;
+    color: var(--light-grey-text);
+    transform: unset;
+    letter-spacing: 0;
+}
+
+.tag.dark {
+    border-left: 2px solid var(--light-border);
+    color: var(--dark-grey-text);
+}
+
+.tag p {
+    color: var(--dark-grey-text);
+}
+
+div.vertical-center {
+    align-items: center;
+}
+
+div.space-between {
+    justify-content: space-between;
+}
+
+div.space-evenly {
+    justify-content: space-evenly;
+}
+
+span.label {
+    display: block;
+    color: var(--dark-grey-text);
+    transform: scaleX(0.9);
+    transform-origin: left;
+}
+
+p.stats {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+p.text-right {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+div.gap-20 {
+    gap: 20px;
+}
+
+hr {
+    width: 100%;
+    border-color: var(--dark-border);
+    margin: 30px 0
+}
+
+.roboto-mono {
+    font-family: "Roboto Mono", monospace;
+    font-weight: 900;
+    transform: unset;
+    letter-spacing: 0;
+}
+
+.smaller {
+    font-size: 14px!important;
+}
+
+q {
+    display: flex;
+    justify-content: flex-end;
+    font-family: "Roboto Mono", monospace;
+    color: var(--dark-grey-text);
+    transform: scaleX(0.9);
+    font-weight: 900;
+    transform-origin: right;
+}
+
+q::after {
+    content: "";
+}
+
+q::before {
+    content: '\2011\00A0';
+}
+
+a {
+    color: var(--light-text);
+    text-decoration-color: var(--light-text);
+}
+
+input[type="button"] {
+    font-family: "Roboto Mono", monospace;
+    color: var(--light-text);
+    border-style: none;
+    border-color: transparent;
+    border-width: 0px;
+    border-image: none;
+    padding-block: 0;
+    padding-inline: 0;
+    background-color: #1a1a1a;
+    padding: 10px;
+    box-shadow: 0 0 1px inset var(--light-border);
+    border-top: 2px solid #fff;
+    height: fit-content;
+    cursor: pointer;
+    transition: all .3s ease-in-out;
+}
+
+input[type="button"]:hover {
+    box-shadow: 0 0 8px inset var(--light-border);
+}
+
+@media only screen and (max-width:768px) {
+    div.width-33,
+    div.width-50,
+    div.width-66 {
+        width: 100%;
+    }
+    div.one-line {
+        gap: 20px;
+        flex-wrap: wrap;
+        flex-direction: column;
+    }
+}

@@ -3,6 +3,8 @@ from datetime import datetime
 import time
 import typing
 import base64
+import logging
+from typing import Optional, Type, Any
 
 ########## Flags ##########
 
@@ -138,15 +140,39 @@ def url_b64_decode(data:str):
     return base64.urlsafe_b64decode(data.encode('utf-8')).decode('utf-8')
 
 
-def url_b64_encode(data:dict):
+def url_b64_encode(data):
     return base64.urlsafe_b64encode(json.dumps(data).encode('utf-8')).decode('utf-8')
 
 
 
 ########## Loggig [WIP] ##########
 
-def console_log(msg):
-    if get_config("advancedDebug"):
-        print(msg)
+logger = logging.getLogger("goflow")
+logger.setLevel(logging.DEBUG)
+
+# File handler
+file_handler = logging.FileHandler("goflow.log", encoding='utf-8')
+file_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
+logger.addHandler(console_handler)
+
+def log(msg: str, level: str = "info"):
+    """
+    Logs a message to the console (if advancedDebug is enabled) and always to a file.
+
+    Parameters
+    ----------
+    msg : str
+        The message to log.
+    level : str
+        Logging level: 'info', 'warning', 'error', 'debug'.
+    """
+    log_func = getattr(logger, level, logger.info)
+    log_func(msg)
+
 
 

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>How to API</h1>
+    <h2>command</h2>
+    <h3>get_one</h3>
+    <pre>
+        {
+            'command' : 'get_one',
+            'model' : &lt;Name of the model [string]&gt;,
+            'include_relationships' : &lt;Relationships to include Optional:[list|bool|None] Default: False&gt;,
+            'exclude_relationships' : &lt;Relationships to exclude Optional:[list|None] Default: None&gt;,
+            'max_depth' : &lt;Depth of relationships to include (Increase with caution) Optional:[integer] Default: 1&gt;,
+            'identifiers' : &lt;Search parameters [dictionary]&gt;,
+        }
+    </pre>
+    <h3>get_all</h3>
+    <pre>
+        {
+            'command' : 'get_one',
+            'model' : &lt;Name of the model [string]&gt;,
+            'include_relationships' : &lt;Relationships to include Optional:[list|bool|None] Default: False&gt;,
+            'exclude_relationships' : &lt;Relationships to exclude Optional:[list|None] Default: None&gt;,
+            'max_depth' : &lt;Depth of relationships to include (Increase with caution) Optional:[integer] Default: 1&gt;,
+            'filters' : &lt;Filters Optional:[dictionary]&gt;,
+        }
+    </pre>
+</body>
+<style>
+    /* CLEAN PLATE */
+    
+     :root {
+        --bg-color-dark: #252525;
+    }
+    
+    body {
+        background-color: var(--bg-color-dark);
+        color: white;
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+    }
+    
+    h1,
+    h2,
+    h3 {
+        margin-inline-start: 0;
+        margin-inline-end: 0;
+        margin-block-start: 0;
+        margin-block-end: 0;
+    }
+    
+    .container {
+        display: flex;
+        width: 100%;
+        box-shadow: inset 0 0 1px #ffffff33;
+    }
+    
+    .wing {
+        display: flex;
+        width: 50%;
+        box-shadow: inset 0 0 1px #ffffff33;
+    }
+</style>
+
+</html>

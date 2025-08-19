@@ -63,7 +63,8 @@ def getSolidpixelsData():
                         "arrived": datetime.datetime.now().replace(microsecond=0),
                         "due": datetime.datetime.now().replace(microsecond=0) + datetime.timedelta(days=7),
                         "hidden": False,
-                        "duration": 0
+                        "duration": 0,
+                        "reply_email": row[1]
                     })
                     time.sleep(5)
                     sheet.update_cell(rowIndex, 9, True)

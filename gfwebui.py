@@ -40,7 +40,9 @@ def parse_include_exclude(request):
     """Parse 'include' and 'exclude' parameters from a request dict."""
     include = request.get('include')
     exclude = request.get('exclude')
-    if exclude:
+    if isinstance(exclude, list):
+        exclude = exclude
+    elif exclude:
         exclude = exclude.split(';')
     else:
         exclude = None
@@ -55,11 +57,21 @@ def parse_include_exclude(request):
     return include, exclude
 
 
-MODEL_LOOKUP = {cls.__name__: cls for cls in Base.registry.mappers for cls in [cls.class_]}
+# MODEL_LOOKUP = {cls.__name__: cls for cls in Base.registry.mappers for cls in [cls.class_]}
 
 
-
-
+def get_model_by_name(model_name: str):
+    """
+    Returns SQLAlchemy model by class name.
+    
+    :param model_name: Model class name
+    :return: Model class or None
+    """
+    for mapper in Base.registry.mappers:
+        cls = mapper.class_
+        if cls.__name__ == model_name:
+            return cls
+    return None
 
 
 
@@ -317,86 +329,97 @@ def accept_post_request_v1(data):
     command = data.get("command")
     payload = data.get("payload")
     req_id = random.randint(1000,9999)
+    model = get_model_by_name(payload['model'])
 
-    gftools.console_log(f"┌ ({req_id}) [API V1 - POST] Command: {command} | Payload: {payload}")
+    gftools.log(f"┌ ({req_id}) [API V1 - POST] Command: {command} | Payload: {payload}", level='info')
 
     match command:
         case 'insert_one':
-            gftools.console_log(f"├ ({req_id}) Identified command")
-            return_id = gfdb.insert_one(
-                model=MODEL_LOOKUP[payload['model']],
-                data=payload['data'],
-                related_fields=payload.get('related_fields', None)
-                )
-            gftools.console_log(f"└ ({req_id}) Inserted into DB with id: {return_id}")
+            gftools.log(f"├ ({req_id}) Identified command", level='info')
+            if model:
+                return_id = gfdb.insert_one(
+                    model=model,
+                    data=payload['data'],
+                    related_fields=payload.get('related_fields', None)
+                    )
+                gftools.log(f"└ ({req_id}) Inserted into DB with id: {return_id}", level='info')
 
         case 'update_one':
-            gftools.console_log(f"├ ({req_id}) Identified command")
-            return_id = gfdb.update_one(
-                model=MODEL_LOOKUP[payload['model']],
-                record_id=payload['record_id'],
-                updates=payload['updates']
-            )
-            gftools.console_log(f"└ ({req_id}) Updated id: {return_id} in {MODEL_LOOKUP[payload['model']]} to {payload['updates']}")
+            gftools.log(f"├ ({req_id}) Identified command", level='info')
+            if model:
+                return_id = gfdb.update_one(
+                    model=model,
+                    record_id=payload['record_id'],
+                    updates=payload['updates']
+                )
+                gftools.log(f"└ ({req_id}) Updated id: {return_id} in {model} to {payload['updates']}", level='info')
         
         case 'delete_one':
-            gftools.console_log(f"├ ({req_id}) Identified command")
-            return_id = gfdb.delete_one(
-                model=MODEL_LOOKUP[payload['model']],
-                record_id=payload['record_id']
-            )
-            if return_id:
-                gftools.console_log(f"└ ({req_id}) Deleted id: {payload['record_id']} in {MODEL_LOOKUP[payload['model']]}")
-            else:
-                gftools.console_log(f"└ [X] ({req_id}) Couldn't delete id: {payload['record_id']} in {MODEL_LOOKUP[payload['model']]}")
+            gftools.log(f"├ ({req_id}) Identified command", level='info')
+            if model:
+                return_id = gfdb.delete_one(
+                    model=model,
+                    record_id=payload['record_id']
+                )
+                if return_id:
+                    gftools.log(f"└ ({req_id}) Deleted id: {payload['record_id']} in {model}", level='info')
+                else:
+                    gftools.log(f"└ [X] ({req_id}) Couldn't delete id: {payload['record_id']} in {model}", level='warning')
         
         case 'delete_by_filters':
-            gftools.console_log(f"├ ({req_id}) Identified command")
-            return_id = gfdb.delete_by_filters(
-                model=MODEL_LOOKUP[payload['model']],
-                filters=payload['filters']
-            )
-            if return_id > 0:
-                gftools.console_log(f"└ ({req_id}) Deleted {return_id} in {MODEL_LOOKUP[payload['model']]}")
-            else:
-                gftools.console_log(f"└ [X] ({req_id}) No records deleted in {MODEL_LOOKUP[payload['model']]}")
-
-
-
-        #case 'get_one':
-        #    gftools.console_log(f"├ ({req_id}) Identified command")
-        #    model = MODEL_LOOKUP[payload['model']]
-        #    include_relationships = payload.get('include_relationships', None)
-        #    exclude_relationships = payload.get('exclude_relationships', None)
-        #    max_depth = payload.get('max_depth', None)
-        #    identifiers = payload['identifiers']
-        #    print(gfdb.get_one(model=model, include_relationships=include_relationships, exclude_relationships=exclude_relationships, max_depth=max_depth, **identifiers))
+            gftools.log(f"├ ({req_id}) Identified command", level='info')
+            if model:
+                return_id = gfdb.delete_by_filters(
+                    model=model,
+                    filters=payload['filters']
+                )
+                if return_id > 0:
+                    gftools.log(f"└ ({req_id}) Deleted {return_id} in {model}", level='info')
+                else:
+                    gftools.log(f"└ [X] ({req_id}) No records deleted in {model}", level='info')
         case _:
-            gftools.console_log(f"├ ({req_id}) Command: `{command}`, not identified.")
+            gftools.log(f"├ ({req_id}) Command: `{command}`, not identified.", level='warning')
 
 
 def accept_get_request_v1(data):
-    data_json = json.loads(gftools.url_b64_decode(data))
-    command = data_json['command']
-    match command:
-        case 'get_one':
-            include, exclude = parse_include_exclude(data_json)
-            model = data_json.get('model', None)
-            identifiers = data_json.get('identifiers', None)
-            if model and identifiers:
-                return gfdb.get_one(
-                    model=MODEL_LOOKUP[model],
-                    include_relationships=include,
-                    exclude_relationships=exclude,
-                    max_depth=data_json.get('max-depth', 1),
-                    **identifiers
-                )
-            else:
+    if data:
+        data_json = json.loads(data)
+        command = data_json['command']
+        match command:
+            case 'get_one':
+                include, exclude = parse_include_exclude(data_json)
+                model = get_model_by_name(data_json.get('model', None))
+                identifiers = data_json.get('identifiers', None)
+                if model and identifiers:
+                    return gfdb.get_one(
+                        model=model,
+                        include_relationships=include,
+                        exclude_relationships=exclude,
+                        max_depth=data_json.get('max-depth', 1),
+                        **identifiers
+                    )
+                else:
+                    return {"message": f"Error: MODEL or IDENTIFIERS are missing or incorrect."}, 200
+            case 'get_all':
+                include, exclude = parse_include_exclude(data_json)
+                model = get_model_by_name(data_json.get('model', None))
+                filters = data_json.get('filters', None)
+                if model:
+                    return json.dumps(gfdb.get_all(
+                        model=model,
+                        include_relationships=include,
+                        exclude_relationships=exclude,
+                        max_depth=data_json.get('max-depth', 1),
+                        filters=filters
+                    ), cls=gftools.EnhancedJSONEncoder)
+                else:
+                    return {"message": f"Error: MODEL is missing or incorrect."}, 200
+            case 'get_tables':
+                return [cls.__name__ for cls in Base.__subclasses__()]
+            case _:
                 return {"message": f"Invalid request."}, 200
-        case 'get_all':
-            return {"message": f"Invalid request."}, 200
-        case _:
-            return {"message": f"Invalid request."}, 200
+    else:
+        return {"message": f"Error: Invalid request."}, 400
 
 
 
@@ -409,17 +432,26 @@ def api_v1():
         data = flask.request.get_json()
         threading.Thread(target=accept_post_request_v1, args=(data,)).start()
         return {"status": "processing"}, 200
-    else:  # GET request
+    else:
         data = flask.request.args.get('data')
-        return accept_get_request_v1(data)
+        if data:
+            return accept_get_request_v1(data)
+        else:
+            return flask.render_template('api-help.html')
 
 
 @app.route("/server-status")
 def server_status():
-    return flask.render_template('server-status.html', api_status="functional", scripts_status="down")
+    return flask.render_template('server-status.html', api_status="functional", scripts_status=gftools.get_flag('status_scripts'))
 
 @app.route("/db-editor")
 def db_editor():
+    if flask.request.headers.getlist("X-Forwarded-For"):
+        user_ip = flask.request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        user_ip = flask.request.remote_addr
+    if user_ip:
+        gftools.log(f"CONNECTION: {user_ip}", level='debug')
     return flask.render_template('db-editor.html')
 
 
