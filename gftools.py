@@ -11,8 +11,7 @@ from typing import Optional, Type, Any
 def create_flag(name, signal):
     with open(f"gfcache/{name}.txt", "w") as f:
         f.write(signal)
-    if get_config("advancedDebug"):
-            print(f"[CREATED FLAG]")
+    log(f"[CREATED FLAG]")
 
 
 def get_flag(flag_name):
@@ -26,10 +25,9 @@ def clear_flag(flag_name):
     try:
         with open(f"gfcache/{flag_name}.txt", "w") as f:
             f.write("")
-        if get_config("advancedDebug"):
-            print(f"[CLEARED FLAG]")
+        log(f"[CLEARED FLAG]")
     except FileNotFoundError:
-        print(f"Error: Flag {flag_name} not found.")
+        log(f"Error: Flag {flag_name} not found.", level='error')
 
 
 
@@ -64,17 +62,17 @@ def wait_for_flag(flag_name:str, signal:str, update_time:int, action, max_retrie
                     else:
                         tries += 1
                 if debug:
-                    print(f"Collision Signal found, retrying in {update_time}s")
+                    log(f"Collision Signal found, retrying in {update_time}s")
                 time.sleep(update_time)
             if debug:
-                print(f"No Collision Signal found.")
+                log(f"No Collision Signal found.")
             action()
         else:
             if debug:
-                print(f"No Collision Signal found.")
+                log(f"No Collision Signal found.")
             action()
     except Exception as e:
-        print(f"Error: wait_for_flag {e}")
+        log(f"Error: wait_for_flag {e}", level='error')
 
 
 
@@ -90,17 +88,17 @@ def detect_collision_flag(flag_name:str, flag_signal:str, update_time:int, actio
                     else:
                         tries += 1
                 if debug:
-                    print(f"Collision Signal found, retrying in {update_time}s")
+                    log(f"Collision Signal found, retrying in {update_time}s")
                 time.sleep(update_time)
             if debug:
-                print(f"No Collision Signal found")
+                log(f"No Collision Signal found")
             action()
         else:
             if debug:
-                print(f"No Collision Signal found.")
+                log(f"No Collision Signal found.")
             action()
     except Exception as e:
-        print(f"Error: wait_for_flag {e}")
+        log(f"Error: wait_for_flag {e}", level='error')
 
 ########## Configs ##########
 
@@ -110,7 +108,7 @@ def get_config(name:str):
             config = json.load(f)[name]
             return config
     except Exception as e:
-        print(f"Error with reading the config file: {e}")
+        log(f"Error with reading the config file: {e}", level='error')
 
 
 ########## Conversions ##########
@@ -176,3 +174,20 @@ def log(msg: str, level: str = "info"):
 
 
 
+def read_logs() -> str:
+    """
+    Reads the log file and returns its content.
+
+    Returns
+    -------
+    str
+        Content of the log file. 
+    """
+
+    try:
+        with open("goflow.log", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "Log not found."
+    except Exception as e:
+        return f"Error reading log file: {e}"

@@ -54,16 +54,15 @@ def populate_db_on_init():
     for table_name, records in data.items():
         model = model_map.get(table_name)
         if not model:
-            print(f"Unknown table: {table_name}")
+            gftools.log(f"Unknown table: {table_name}", level='warning')
             continue
 
         for record in records:
-            # Make sure record is a dict
             if isinstance(record, dict):
                 obj = model(**record)
                 session.add(obj)
             else:
-                print(f"Unexpected record format in {table_name}: {record}")
+                gftools.log(f"Unexpected record format in {table_name}: {record}", level='warning')
 
     session.commit()
 
@@ -80,7 +79,7 @@ def get_timetrack(identifiers: dict):
         else:
             raise Exception(f"Timetrack searched by '{filters}' not found.")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_timetrack: {e}")
+        gftools.log(f"Error in get_timetrack: {e}", level='error')
         return None
     finally:
         session.close()
@@ -98,7 +97,7 @@ def insert_timetrack(data):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating timetracker: {e}")
+        gftools.log(f"Error creating timetracker: {e}", level='error')
         session.rollback()  
     finally:
         session.close()
@@ -116,7 +115,7 @@ def set_timetrack(identifiers: dict, updates: dict):
         else:
             raise Exception("No records found.")
     except Exception as e:
-        print(f"Error updating timetracker: {e}")
+        gftools.log(f"Error updating timetracker: {e}", level='error')
         session.rollback()  
     finally:
         session.commit()
@@ -137,7 +136,7 @@ def end_timetrack(identifiers: dict):
         else:
             raise Exception("No records found.")
     except Exception as e:
-        print(f"Error ending timetracker: {e}")
+        gftools.log(f"Error ending timetracker: {e}", level='error')
         session.rollback()  
     finally:
         session.commit()
@@ -157,7 +156,7 @@ def sum_task_timetracks(task_id):
             raise Exception("No records found.")
 
     except Exception as e:
-        print(f"Error creating a sum: {e}")
+        gftools.log(f"Error creating a sum: {e}", level='error')
         session.rollback()  
     finally:
         session.commit()
@@ -212,7 +211,7 @@ def get_task(**kwargs):
         else:
             raise Exception(f"Task searched by '{kwargs}' not found")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_task: {e}")
+        gftools.log(f"Error in get_task: {e}", level='error')
         null = session.query(Tasks).first()
         return null.to_dict() if null else {}
     finally:
@@ -270,7 +269,7 @@ def insert_task(data):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating task: {e}")
+        gftools.log(f"Error creating task: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -282,7 +281,7 @@ def get_task_priorities(exclude_relationships: Optional[list] = None, include_re
         priorities = session.query(TaskPriorities).all()
         return [priority.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for priority in priorities]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_task_priorities: {e}")
+        gftools.log(f"Error in get_task_priorities: {e}", level='error')
         null = session.query(TaskPriorities).first()
         return [null.to_dict()] if null else []
     finally:
@@ -298,7 +297,7 @@ def get_task_priority(**kwargs) -> dict:
         else:
             raise Exception(f"Priority searched by '{kwargs}' not found.")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_task_priority: {e}")
+        gftools.log(f"Error in get_task_priority: {e}", level='error')
         null = session.query(TaskPriorities).first()
         return null.to_dict() if null else {}
     finally:
@@ -311,7 +310,7 @@ def get_task_statuses(exclude_relationships: Optional[list] = None, include_rela
         statuses = session.query(TaskStatuses).all()
         return [status.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for status in statuses]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_task_statuses: {e}")
+        gftools.log(f"Error in get_task_statuses: {e}", level='error')
         null = session.query(TaskStatuses).first()
         return [null.to_dict()] if null else []
     finally:
@@ -327,7 +326,7 @@ def get_task_status(**kwargs) -> dict:
         else:
             raise Exception(f"Task status searched by '{kwargs}' not found.")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_task_status: {e}")
+        gftools.log(f"Error in get_task_status: {e}", level='error')
         null = session.query(TaskStatuses).first()
         return null.to_dict() if null else {}
     finally:
@@ -357,7 +356,7 @@ def sync_task(identifiers: dict, updates: dict):
         else:
             raise Exception("No records found.")
     except Exception as e:
-        print(f"Error updating task: {e}")
+        gftools.log(f"Error updating task: {e}", level='error')
         session.rollback()  
     finally:
         session.commit()
@@ -373,7 +372,7 @@ def end_task(**kwargs):
             raise Exception(f"Task searched by '{kwargs} not found.")
 
     except Exception as e:
-        print(f"Error ending task: {e}")
+        gftools.log(f"Error ending task: {e}", level='error')
         session.rollback()
     finally:
         session.commit()
@@ -395,7 +394,7 @@ def insert_client(data):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating client: {e}")
+        gftools.log(f"Error creating client: {e}", level='error')
         session.rollback()
         return 0
     finally:
@@ -414,7 +413,7 @@ def insert_client_email(data):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating client's email: {e}")
+        gftools.log(f"Error creating client's email: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -431,7 +430,7 @@ def get_clients(exclude_relationships: Optional[list] = None, include_relationsh
         clients = session.query(Clients).all()
         return [client.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for client in clients]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_Clients_DB: {e}")
+        gftools.log(f"Error in get_Clients_DB: {e}", level='error')
         null = session.query(Clients).first()
         return [null.to_dict()] if null else []
     finally:
@@ -447,7 +446,7 @@ def get_client(**kwargs):
         else:
             raise Exception(f"Client searched by '{kwargs}' not found.")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_client: {e}")
+        gftools.log(f"Error in get_client: {e}", level='error')
         null = session.query(Clients).first()
         return null.to_dict() if null else {}
     finally:
@@ -462,7 +461,7 @@ def get_client_emails(**kwargs) -> list[dict]:
         emails = session.query(ClientsEmails).filter_by(**kwargs).all()
         return [email.to_dict() for email in emails]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_client_emails: {e}")
+        gftools.log(f"Error in get_client_emails: {e}", level='error')
         null = session.query(Clients).first()
         return [null.to_dict()] if null else []
     finally:
@@ -475,7 +474,7 @@ def get_all_client_emails(exclude_relationships: Optional[list] = None, include_
         emails = session.query(ClientsEmails).all()
         return [email.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for email in emails]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_all_client_emails: {e}")
+        gftools.log(f"Error in get_all_client_emails: {e}", level='error')
         return []
     finally:
         session.close()
@@ -500,7 +499,7 @@ def insert_project(data: ProjectDict):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating project: {e}")
+        gftools.log(f"Error creating project: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -512,7 +511,7 @@ def get_projects(exclude_relationships: Optional[list] = None, include_relations
         projects = session.query(Projects).all()
         return [project.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for project in projects]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_projects: {e}")
+        gftools.log(f"Error in get_projects: {e}", level='error')
         null = session.query(Projects).first()
         return [null.to_dict()] if null else []
     finally:
@@ -528,7 +527,7 @@ def get_project(**kwargs) -> dict:
         else:
             raise Exception(f"Project searched by '{kwargs}' not found.")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_project: {e}")
+        gftools.log(f"Error in get_project: {e}", level='error')
         null = session.query(Projects).first()
         return null.to_dict() if null else {}
     finally:
@@ -546,7 +545,7 @@ def insert_project_status(data: ProjectStatusDict):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating project: {e}")
+        gftools.log(f"Error creating project: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -559,7 +558,7 @@ def get_project_statuses(exclude_relationships: Optional[list] = None, include_r
         statuses = session.query(ProjectsStatuses).all()
         return [status.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for status in statuses]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_project_statuses: {e}")
+        gftools.log(f"Error in get_project_statuses: {e}", level='error')
         null = session.query(Projects).first()
         return [null.to_dict()] if null else []
     finally:
@@ -589,7 +588,7 @@ def insert_employee(data: EmployeeDict):
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating employee record: {e}")
+        gftools.log(f"Error creating employee record: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -602,7 +601,7 @@ def insert_employeePosition(data):
         session.add(newEmployeePosition)
         session.commit()
     except Exception as e:
-        print(f"Error creating employee position record: {e}")
+        gftools.log(f"Error creating employee position record: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -614,7 +613,7 @@ def get_positions(exclude_relationships: Optional[list] = None, include_relation
         positions = session.query(EmployeePositions).all()
         return [position.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for position in positions]
     except Exception as e:
-        print(f"Error getting positions: {e}")
+        gftools.log(f"Error getting positions: {e}", level='error')
         null = session.query(EmployeePositions).first()
         return [null]
     finally:
@@ -627,7 +626,7 @@ def get_employees(exclude_relationships: Optional[list] = None, include_relation
         employees = session.query(Employees).all()
         return [employee.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for employee in employees]
     except Exception as e:
-        print(f"Error getting employees: {e}")
+        gftools.log(f"Error getting employees: {e}", level='error')
         null = session.query(Employees).first()
         return [null.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships)] if null else []
     finally:
@@ -643,7 +642,7 @@ def get_employee(**kwargs) -> dict:
         else:
             raise Exception(f"Employee searched by '{kwargs}' not found.")
     except Exception as e:
-        print(f"Error getting employee: {e}")
+        gftools.log(f"Error getting employee: {e}", level='error')
         null = session.query(Employees).first()
         return null.to_dict() if null else {}
     finally:
@@ -660,7 +659,7 @@ def update_employee(id, updates:dict):
         else:
             raise Exception("No records found.")
     except Exception as e:
-        print(f"Error updating employee: {e}")
+        gftools.log(f"Error updating employee: {e}", level='error')
         session.rollback()  
     finally:
         session.commit()
@@ -684,7 +683,7 @@ def insert_email(data: EmailsDict):
         session.add(newEmail)
         session.commit()
     except Exception as e:
-        print(f"Error creating email: {e}")
+        gftools.log(f"Error creating email: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -740,7 +739,7 @@ def transfer_emailsToTasks():
                 "reply_email": str(email['sender'])
             })
     except Exception as e:
-        print(f"Error transferring: {e}")
+        gftools.log(f"Error transferring: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -765,7 +764,7 @@ def assignProjectToClient(client_id, project_id):
         
 
     except Exception as e:
-        print(f"Error pairing records: {e}")
+        gftools.log(f"Error pairing records: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -806,7 +805,7 @@ def get_one(model: Type[Any], include_relationships: Optional[list] | Optional[b
             return record.to_dict(include_relationships=include_relationships ,exclude_relationships=exclude_relationships, max_depth=max_depth)
         raise Exception(f"{model.__name__} searched by '{kwargs}' not found.")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_one({model.__name__}): {e}")
+        gftools.log(f"Error in get_one({model.__name__}): {e}", level='error')
         null = session.query(model).first()
         return null.to_dict(include_relationships=include_relationships ,exclude_relationships=exclude_relationships) if null else {}
     finally:
@@ -822,7 +821,7 @@ def get_all(model: Type[Any], exclude_relationships: Optional[list] = None, incl
         records = query.all()
         return [r.to_dict(exclude_relationships=exclude_relationships, include_relationships=include_relationships) for r in records]
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in get_all({model.__name__}): {e}")
+        gftools.log(f"Error in get_all({model.__name__}): {e}", level='error')
         null = session.query(model).first()
         return [null.to_dict()] if null else []
     finally:
@@ -862,7 +861,7 @@ def insert_one(model: Type[Any], data: dict, related_fields: Optional[dict] = No
         session.commit()
         return record.id
     except Exception as e:
-        print(f"Error creating {model.__name__}: {e}")
+        gftools.log(f"Error creating {model.__name__}: {e}", level='error')
         session.rollback()
     finally:
         session.close()
@@ -875,10 +874,11 @@ def update_one(model: Type[Any], record_id: Any, updates: dict):
         if record:
             for key, value in updates.items():
                 setattr(record, key, value)
+            return record.id
         else:
             raise Exception(f"No {model.__name__} record found with id {record_id}.")
     except Exception as e:
-        print(f"Error updating {model.__name__}: {e}")
+        gftools.log(f"Error updating {model.__name__}: {e}", level='error')
         session.rollback()
     finally:
         session.commit()
@@ -895,7 +895,7 @@ def delete_one(model: Type[Any], record_id: Any):
         else:
             raise Exception(f"No {model.__name__} record found with id {record_id}.")
     except Exception as e:
-        print(f"Error deleting {model.__name__}: {e}")
+        gftools.log(f"Error deleting {model.__name__}: {e}", level='error')
         session.rollback()
         return False
     finally:
@@ -909,7 +909,7 @@ def delete_by_filters(model: Type[Any], filters: dict):
         session.commit()
         return count
     except Exception as e:
-        print(f"Error deleting {model.__name__} by filters: {e}")
+        gftools.log(f"Error deleting {model.__name__} by filters: {e}", level='error')
         session.rollback()
         return 0
     finally:

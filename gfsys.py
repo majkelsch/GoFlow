@@ -21,7 +21,7 @@ def main_loop():
             gfe.exportTasksToSheets()
         except Exception as e:
             gftools.create_flag("status_scripts", "problems")
-            print(f"[{datetime.datetime.now()}] Error in main_loop: {e}")
+            gftools.log(f"Error in main_loop: {e}", level='error')
         time.sleep(gftools.get_config("updateTime") or 60)
 
 
@@ -35,7 +35,7 @@ while True:
     except Exception as e:
         wait_minutes = 5
         gftools.create_flag("status_scripts", "problems")
-        print(f"[{datetime.datetime.now()}] Fatal error occurred. Restarting in {wait_minutes} minutes...")
+        gftools.log(f"Fatal error occurred. Restarting in {wait_minutes} minutes...", level='error')
         time.sleep(wait_minutes * 60)
 
 

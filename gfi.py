@@ -3,6 +3,7 @@ import gfdb
 import app_secrets
 import gs_mngr
 import gm_mngr
+import gftools
 
 # Libs
 import datetime
@@ -72,7 +73,7 @@ def getSolidpixelsData():
         else:
             raise Exception("Couldn't find sheet")
     except Exception as e:
-        print(f"[{datetime.datetime.now()}] Error in getSolidpixelsData: {e}")
+        gftools.log(f"Error in getSolidpixelsData: {e}", level='error')
 
 
 
@@ -93,7 +94,7 @@ def getGmailData():
             if not page_token:
                 break
         except HttpError as e:
-            print(f'[{datetime.datetime.now()}] Error in getGmailData {e}')
+            gftools.log(f'Error in getGmailData {e}', level='error')
             break
     
     for message in messages:
@@ -121,7 +122,7 @@ def getGmailData():
                         try:
                             date = date_parser.parse(date_str)
                         except Exception as e:
-                            print(f"[{datetime.datetime.now()}] Failed to parse date: {date_str}, error: {e}")
+                            gftools.log(f"Failed to parse date: {date_str}, error: {e}", level='error')
                             date = datetime.datetime.now()
 
 
@@ -134,7 +135,7 @@ def getGmailData():
                 })
             
         except HttpError as error:
-            print(f'[{datetime.datetime.now()}] An error occurred: {error}')
+            gftools.log(f'An error occurred: {error}', level='error')
             break
     
     gfdb.transfer_emailsToTasks()

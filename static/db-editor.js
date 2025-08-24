@@ -129,6 +129,7 @@ function get_table_data(model) {
 
 window.onload = () => {
     API_URL = 'http://104.197.195.100/api/v1';
+    //API_URL = 'http://127.0.0.1:8080/api/v1';
     const editor = document.querySelector('#content');
     const tabs = document.querySelector('#tabs');
 

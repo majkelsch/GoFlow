@@ -16,10 +16,14 @@ import time
 import json
 import random
 import base64
+import typing
+from typing import Optional
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 #############
 app = flask.Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 flask_cors.CORS(app)
 
 
@@ -60,7 +64,7 @@ def parse_include_exclude(request):
 # MODEL_LOOKUP = {cls.__name__: cls for cls in Base.registry.mappers for cls in [cls.class_]}
 
 
-def get_model_by_name(model_name: str):
+def get_model_by_name(model_name: str) -> typing.Any:
     """
     Returns SQLAlchemy model by class name.
     
@@ -72,6 +76,18 @@ def get_model_by_name(model_name: str):
         if cls.__name__ == model_name:
             return cls
     return None
+
+
+def log_user_connection(to: Optional[str] = None):
+    if flask.request.headers.getlist("X-Forwarded-For"):
+        user_ip = flask.request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        user_ip = flask.request.remote_addr
+    if user_ip:
+        if to:
+            gftools.log(f"CONNECTION: {user_ip} to {to}", level='debug')
+        else:
+            gftools.log(f"CONNECTION: {user_ip}", level='debug')
 
 
 
@@ -329,7 +345,8 @@ def accept_post_request_v1(data):
     command = data.get("command")
     payload = data.get("payload")
     req_id = random.randint(1000,9999)
-    model = get_model_by_name(payload['model'])
+    model = get_model_by_name(payload.get('model', None))
+
 
     gftools.log(f"┌ ({req_id}) [API V1 - POST] Command: {command} | Payload: {payload}", level='info')
 
@@ -377,8 +394,26 @@ def accept_post_request_v1(data):
                     gftools.log(f"└ ({req_id}) Deleted {return_id} in {model}", level='info')
                 else:
                     gftools.log(f"└ [X] ({req_id}) No records deleted in {model}", level='info')
+        case 'end_task':
+            gftools.log(f"├ ({req_id}) Identified command", level='info')
+            if payload['sendAutoMail'] == True:
+                gftools.log(f"├ ({req_id}) Sending automail", level='info')
+                task = gfdb.get_one(model=get_model_by_name('Tasks'), support_id=payload['task_id'])
+                if task:
+                    if gftools.get_config('sendClientMails'):
+                        mail = task['reply_email']
+                        if mail:
+                            gfm.send_html_email(mail, f"Požadavek {payload['task_id']} vyřízen.", gfm.generateTaskFinishedEmail('email_templates/task-finished-client.html', payload['task_id']))
+                    
+            else:
+                gftools.log(f"├ ({req_id}) Only ending task", level='info')
+            gfdb.end_task(support_id=payload['task_id'])
+            gftools.log(f"├ ({req_id}) Updated DB record, syncing GS...", level='info')
+            gftools.detect_collision_flag("gs_sync", "syncing", 5, lambda: gfe.end_task(support_id=payload['task_id']), max_retries=50, debug=True)
+            gftools.log(f"├ ({req_id}) Updated GS", level='info')
         case _:
             gftools.log(f"├ ({req_id}) Command: `{command}`, not identified.", level='warning')
+            
 
 
 def accept_get_request_v1(data):
@@ -442,17 +477,18 @@ def api_v1():
 
 @app.route("/server-status")
 def server_status():
+    log_user_connection()
     return flask.render_template('server-status.html', api_status="functional", scripts_status=gftools.get_flag('status_scripts'))
 
 @app.route("/db-editor")
 def db_editor():
-    if flask.request.headers.getlist("X-Forwarded-For"):
-        user_ip = flask.request.headers.getlist("X-Forwarded-For")[0]
-    else:
-        user_ip = flask.request.remote_addr
-    if user_ip:
-        gftools.log(f"CONNECTION: {user_ip}", level='debug')
+    log_user_connection()
     return flask.render_template('db-editor.html')
+
+@app.route("/logs")
+def logs():
+    log_user_connection()
+    return flask.render_template('logs.html', logs=gftools.read_logs().split('\n'))
 
 
 if __name__ == "__main__":

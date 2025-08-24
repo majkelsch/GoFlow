@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoFlow | Logs</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/kard.css') }}">
+</head>
+
+<body>
+    <div class="container textured tex-grid">
+        <div class="header width-100">
+            <h1>
+                Logs <span class="smaller"><i>Beta</i></span>
+            </h1>
+        </div>
+        <div id="content" class="content column">
+            <div class="subheader width-100">
+                <p class="border-bottom-sharp">GoFlog Log</p>
+            </div>
+            <div class="logs">
+                {% for line in logs %}
+                <p class="tag width-100">{{line}}</p>
+                {% endfor %}
+            </div>
+
+        </div>
+        {% include 'footer.html' %}
+    </div>
+</body>
+
+</html>

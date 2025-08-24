@@ -1,5 +1,5 @@
 # Custom Libs
-
+import gftools
 
 # Libs
 import os
@@ -73,14 +73,14 @@ def send_email(to, subject, body):
     service = gmail_authenticate()
     message = create_message(to, subject, body)
     result = service.users().messages().send(userId='me', body=message).execute()
-    print(f"Message sent! Message ID: {result['id']}")
+    gftools.log(f"Message sent! Message ID: {result['id']}")
     return result
 
 def send_html_email(to:str, subject:str, body:str):
     service = gmail_authenticate()
     message = create_html_message(to, subject, body)
     result = service.users().messages().send(userId='me', body=message).execute()
-    print(f"Message sent! Message ID: {result['id']}")
+    gftools.log(f"Message sent! Message ID: {result['id']}")
     return result
 
 

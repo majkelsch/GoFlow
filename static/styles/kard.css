@@ -54,7 +54,7 @@ div.container {
     flex-direction: column;
 }
 
-div.width-33 {
+.width-33 {
     width: calc(100%/3);
 }
 
@@ -62,11 +62,11 @@ div.width-33 {
     width: 50%;
 }
 
-div.width-66 {
+.width-66 {
     width: calc(100%/3*2);
 }
 
-div.width-100 {
+.width-100 {
     width: 100%;
 }
 
@@ -118,6 +118,11 @@ div.tex-grid {
 
 
 /* TEXT/TYPOGRAPHY */
+
+.logs p {
+    transform: unset;
+    letter-spacing: 0;
+}
 
 .uppercase {
     text-transform: uppercase;

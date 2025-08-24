@@ -161,8 +161,7 @@ def createTask(data):
             spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
             body=body
         ).execute()
-        if gftools.get_config("advancedDebug"):
-            print(f"[API REQUEST SENT - POST] Response: {response}")
+        gftools.log(f"[API REQUEST SENT - POST] Response: {response}", level='info')
     else:
         raise Exception("Could not create task, try again later")
 
@@ -205,8 +204,7 @@ def exportTasksToSheets():
     try:
         pendingTasks = getMissingTasks()
 
-        if gftools.get_config("advancedDebug"):
-            print(f"[GFE: Pending tasks: {len(pendingTasks)}]")
+        gftools.log(f"[GFE: Pending tasks: {len(pendingTasks)}]", level='info')
 
         if len(pendingTasks) > 0:
             index = 0
@@ -214,8 +212,7 @@ def exportTasksToSheets():
                 id = pendingTasks[index]
 
                 if gftools.get_flag("gs_sync_recalculate") == "recalculate":
-                    if gftools.get_config("advancedDebug"):
-                        print(f"[!] Caught a recalculate flag")
+                    gftools.log(f"[!] Caught a recalculate flag", level='debug')
                     pendingTasks = getMissingTasks()
                     gftools.clear_flag("gs_sync_recalculate")
                     index = 0
@@ -232,14 +229,12 @@ def exportTasksToSheets():
                         if gftools.get_config("sendEmployeeMails"):
                             gfm.send_html_email(employee_email, "Máš nový úkol", gfm.generateTaskEmail("email_templates/task-listed-employee.html", taskData))
 
-                        if gftools.get_config("advancedDebug"):
-                            print(f"[GFE: Export progress: {index}/{len(pendingTasks)}]")
+
+                        gftools.log(f"[GFE: Export progress: {index}/{len(pendingTasks)}]", level='info')
                 index +=1
-            if gftools.get_config("advancedDebug"):
-                print(f"[GFE: Export finished.]")
+            gftools.log(f"[GFE: Export finished.]", level='info')
     except gspread.exceptions.APIError as e:
-        if gftools.get_config("advancedDebug"):
-            print(f"[API ERROR]: {e}")
+        gftools.log(f"[API ERROR]: {e}", level='error')
     finally:
         gftools.clear_flag("gs_sync")
 
@@ -351,8 +346,7 @@ def update_task(support_id):
             spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
             body=body
         ).execute()
-        if gftools.get_config("advancedDebug"):
-            print(f"[API REQUEST SENT - POST] Response: {response}")
+        gftools.log(f"[API REQUEST SENT - POST] Response: {response}", level='info')
 
 
 def end_task(support_id):
@@ -383,7 +377,6 @@ def end_task(support_id):
             spreadsheetId=app_secrets.get("GOFLOW_SPREADSHEET_ID"),
             body=body
         ).execute()
-        if gftools.get_config("advancedDebug"):
-            print(f"[API REQUEST SENT - POST] Response: {response}")
+        gftools.log(f"[API REQUEST SENT - POST] Response: {response}", level='info')
     else:
         raise Exception("Could not end task, please try again later.")
